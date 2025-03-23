@@ -1,0 +1,15 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+This repository contains workflows and scripts for:
+
+1. Scraping data or documents from the Internet
+2. Transforming the scraped examples into structured JSON data
+3. Embedding the data for semantic search
+3. Uploading to a PostgreSQL database
+
+Working documents and helper files not meant to be retained may be placed in the `artifacts` folder, which is ignored by git.
+
+To avoid confusion, you should keep your bash console opened to the project root folder and should specify all file paths in relation to the project root.

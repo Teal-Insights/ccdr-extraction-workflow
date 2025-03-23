@@ -1,0 +1,48 @@
+---
+description: Formulating a project plan in response to an initial user prompt
+globs: 
+alwaysApply: false
+---
+## Planning Guidelines
+
+The user will provide a project prompt of medium-sized scope, often a Github issue or feature request. You will be responsible for converting this into a "project" with a queue of structured "tasks" using your task manager tool. It's recommended that you iteratively construct your project plan in a file in `artifacts` before actually calling the `create_project` tool.
+
+Note that to quickly grok the codebase, obtain high-level strategy advice, or get quick answers to codebase questions, it's often a good idea to pack the repository with `repomix` and then use the `llm` tool to `cat` the `repomix-output.txt` file to "gemini-2.0-flash-001" (see long-context rules). (This is sometimes a useful step for task executors to take as well.)
+
+### Initial Assessment Phase
+
+Before creating a project with tasks, the planner should:
+
+1. **Understand the Repository**:
+   - What is the tech stack?
+   - What are the external dependencies (APIs, services, credentials)?
+   - Where should we place intermediate working files (`artifacts`), and where should we place deliverables?
+
+2. **Understand the High-Level Goals**:
+   - What are we trying to accomplish?
+   - What are the project deliverables?
+   - How will we define and validate success?
+
+3. **Formulate High-Level Strategy**:
+   - Identify what steps need to be taken, and in what order
+   - Assess the feasibility of the plan, perform a pre-mortem, and consult the user to clarify any vagaries
+   - Address any potential failure points or bottlenecks by front-loading implementation research or feasibility assessment tasks
+
+### Task Creation Guidelines
+
+For each task, consider which tools and rules are relevant to completeing that task. When creating tasks, ensure they:
+
+1. **Are Specific and Actionable**:
+   - Distinguish between intermediate artifacts and final deliverables
+   - Specify exact file paths for deliverables
+   - Include validation criteria for each deliverable
+
+2. **Include Relevant Context**:
+   - Reference specific rule sets to consult (e.g., "Review postgres and long-context rules")
+   - Mention specific tools to use (e.g., "Use `llm` to request test implementation advice from 'gemini-2.0-flash-001'...")
+   - Include instructions for secrets and environment variables management
+
+3. **Are Properly Sequenced**:
+   - Explain logical dependencies between a task and its previous or subsequent workflow steps
+   - Explain how task specifics relate to larger goals
+   - Front-load test creation (TDD) if implementation details and success conditions are well defined and the task is non-exploratory
