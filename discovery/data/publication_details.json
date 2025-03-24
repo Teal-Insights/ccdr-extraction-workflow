@@ -39,7 +39,8 @@
     "source_url": "https://openknowledge.worldbank.org/entities/publication/7fa21da5-8027-44e9-bbd7-fc42b9ab9706",
     "original_title": "Cabo Verde Country Climate and Development Report",
     "source": "World Bank Open Knowledge Repository",
-    "page_found": 1
+    "page_found": 1,
+    "id": "pub_001"
   },
   {
     "title": "Tanzania Country Climate and Development Report",
@@ -117,7 +118,8 @@
     "source_url": "https://openknowledge.worldbank.org/entities/publication/b4d94900-456d-40eb-a618-a7b7474647a4",
     "original_title": "Tanzania Country Climate and Development Report",
     "source": "World Bank Open Knowledge Repository",
-    "page_found": 1
+    "page_found": 1,
+    "id": "pub_002"
   },
   {
     "title": "Yemen Country Climate and Development Report",
@@ -159,7 +161,8 @@
     "source_url": "https://openknowledge.worldbank.org/entities/publication/d0e0dab0-5108-4be4-b0a7-1d3a856d5935",
     "original_title": "Yemen Country Climate and Development Report",
     "source": "World Bank Open Knowledge Repository",
-    "page_found": 1
+    "page_found": 1,
+    "id": "pub_003"
   },
   {
     "title": "Djibouti Country Climate and Development Report",
@@ -237,7 +240,8 @@
     "source_url": "https://openknowledge.worldbank.org/entities/publication/efc2d004-7c01-4ad7-a06d-c85bf40c7d25",
     "original_title": "Djibouti Country Climate and Development Report",
     "source": "World Bank Open Knowledge Repository",
-    "page_found": 1
+    "page_found": 1,
+    "id": "pub_004"
   },
   {
     "title": "Moldova Country Climate and Development Report",
@@ -279,7 +283,8 @@
     "source_url": "https://openknowledge.worldbank.org/entities/publication/b5886ecd-d46b-4d48-a747-19e9326e0e9d",
     "original_title": "Moldova Country Climate and Development Report",
     "source": "World Bank Open Knowledge Repository",
-    "page_found": 1
+    "page_found": 1,
+    "id": "pub_005"
   },
   {
     "title": "Armenia Country Climate and Development Report",
@@ -321,7 +326,8 @@
     "source_url": "https://openknowledge.worldbank.org/entities/publication/afb4fe3c-4d8c-4567-88b7-ad9257885815",
     "original_title": "Armenia Country Climate and Development Report",
     "source": "World Bank Open Knowledge Repository",
-    "page_found": 1
+    "page_found": 1,
+    "id": "pub_006"
   },
   {
     "title": "Tajikistan Country Climate and Development Report",
@@ -387,7 +393,8 @@
     "source_url": "https://openknowledge.worldbank.org/entities/publication/cc01a571-2254-4a07-acdd-3bcff0021e23",
     "original_title": "Tajikistan Country Climate and Development Report",
     "source": "World Bank Open Knowledge Repository",
-    "page_found": 1
+    "page_found": 1,
+    "id": "pub_007"
   },
   {
     "title": "Senegal Country Climate and Development Report",
@@ -465,7 +472,8 @@
     "source_url": "https://openknowledge.worldbank.org/entities/publication/a6c43dd1-aa81-4a91-aed2-c3209507077d",
     "original_title": "Senegal Country Climate and Development Report",
     "source": "World Bank Open Knowledge Repository",
-    "page_found": 1
+    "page_found": 1,
+    "id": "pub_008"
   },
   {
     "title": "Poland Country Climate and Development Report",
@@ -507,7 +515,8 @@
     "source_url": "https://openknowledge.worldbank.org/entities/publication/1396095d-dbc1-4c7d-a19e-188171cc5950",
     "original_title": "Poland Country Climate and Development Report",
     "source": "World Bank Open Knowledge Repository",
-    "page_found": 1
+    "page_found": 1,
+    "id": "pub_009"
   },
   {
     "title": "Madagascar Country Climate and Development Report",
@@ -585,7 +594,8 @@
     "source_url": "https://openknowledge.worldbank.org/entities/publication/dfacf3c2-e6cf-4927-b02c-ce4265309dec",
     "original_title": "Madagascar Country Climate and Development Report",
     "source": "World Bank Open Knowledge Repository",
-    "page_found": 1
+    "page_found": 1,
+    "id": "pub_010"
   },
   {
     "title": "Guinea-Bissau Country Climate and Development Report",
@@ -639,7 +649,8 @@
     "source_url": "https://openknowledge.worldbank.org/entities/publication/3adcbbf4-e09d-4466-9d75-bec1274da894",
     "original_title": "Guinea-Bissau Country Climate and Development Report",
     "source": "World Bank Open Knowledge Repository",
-    "page_found": 2
+    "page_found": 2,
+    "id": "pub_011"
   },
   {
     "title": "Central African Republic Country Climate and Development Report",
@@ -693,7 +704,8 @@
     "source_url": "https://openknowledge.worldbank.org/entities/publication/b5324c25-7633-4206-922e-8d1bffa33b93",
     "original_title": "Central African Republic Country Climate and Development Report",
     "source": "World Bank Open Knowledge Repository",
-    "page_found": 2
+    "page_found": 2,
+    "id": "pub_012"
   },
   {
     "title": "Mongolia Country Climate and Development Report",
@@ -771,7 +783,8 @@
     "source_url": "https://openknowledge.worldbank.org/entities/publication/ac9550ec-3142-482e-97fb-c01bfb40ff30",
     "original_title": "Mongolia Country Climate and Development Report",
     "source": "World Bank Open Knowledge Repository",
-    "page_found": 2
+    "page_found": 2,
+    "id": "pub_013"
   },
   {
     "title": "The Pacific Atoll Countries Country Climate and Development Report",
@@ -825,7 +838,8 @@
     "source_url": "https://openknowledge.worldbank.org/entities/publication/81cd0369-b80a-4d77-8968-c2ed5c704d55",
     "original_title": "The Pacific Atoll Countries Country Climate and Development Report",
     "source": "World Bank Open Knowledge Repository",
-    "page_found": 2
+    "page_found": 2,
+    "id": "pub_014"
   },
   {
     "title": "Dominica, Grenada, Saint Lucia, and Saint Vincent and the Grenadines Country Climate And Development Report",
@@ -903,7 +917,8 @@
     "source_url": "https://openknowledge.worldbank.org/entities/publication/d55f9a87-8383-4e58-a135-b3967cd4e6f7",
     "original_title": "Dominica, Grenada, Saint Lucia, and Saint Vincent and the Grenadines Country Climate And Development Report",
     "source": "World Bank Open Knowledge Repository",
-    "page_found": 2
+    "page_found": 2,
+    "id": "pub_015"
   },
   {
     "title": "Ecuador Country Climate and Development Report",
@@ -969,7 +984,8 @@
     "source_url": "https://openknowledge.worldbank.org/entities/publication/d4942f7a-8ae0-4383-9c9c-3bd1252c939f",
     "original_title": "Ecuador Country Climate and Development Report",
     "source": "World Bank Open Knowledge Repository",
-    "page_found": 2
+    "page_found": 2,
+    "id": "pub_016"
   },
   {
     "title": "Western Balkans 6 Country Climate and Development Report",
@@ -1047,7 +1063,8 @@
     "source_url": "https://openknowledge.worldbank.org/entities/publication/ab6bfceb-9501-4587-a67a-b783dfa1ca6b",
     "original_title": "Western Balkans 6 Country Climate and Development Report",
     "source": "World Bank Open Knowledge Repository",
-    "page_found": 2
+    "page_found": 2,
+    "id": "pub_017"
   },
   {
     "title": "Maldives Country Climate and Development Report",
@@ -1125,7 +1142,8 @@
     "source_url": "https://openknowledge.worldbank.org/entities/publication/0b2772e9-1ed6-41c8-81c5-92b550b2eaf0",
     "original_title": "Maldives Country Climate and Development Report",
     "source": "World Bank Open Knowledge Repository",
-    "page_found": 2
+    "page_found": 2,
+    "id": "pub_018"
   },
   {
     "title": "Liberia Country Climate Development Report",
@@ -1179,7 +1197,8 @@
     "source_url": "https://openknowledge.worldbank.org/entities/publication/9daf563f-01ed-4708-9568-ebc8c38c3c5d",
     "original_title": "Liberia Country Climate Development Report",
     "source": "World Bank Open Knowledge Repository",
-    "page_found": 2
+    "page_found": 2,
+    "id": "pub_019"
   },
   {
     "title": "Lebanon Country Climate and Development Report",
@@ -1221,7 +1240,8 @@
     "source_url": "https://openknowledge.worldbank.org/entities/publication/151f45d9-420f-4673-b17b-4b38d8d51fa0",
     "original_title": "Lebanon Country Climate and Development Report",
     "source": "World Bank Open Knowledge Repository",
-    "page_found": 2
+    "page_found": 2,
+    "id": "pub_020"
   },
   {
     "title": "Zimbabwe Country Climate and Development Report",
@@ -1263,7 +1283,8 @@
     "source_url": "https://openknowledge.worldbank.org/entities/publication/062f05a1-9676-4a12-ae9c-d6b3d3ba5242",
     "original_title": "Zimbabwe Country Climate and Development Report",
     "source": "World Bank Open Knowledge Repository",
-    "page_found": 3
+    "page_found": 3,
+    "id": "pub_021"
   },
   {
     "title": "Ethiopia Country Climate and Development Report, February 2024",
@@ -1317,7 +1338,8 @@
     "source_url": "https://openknowledge.worldbank.org/entities/publication/4f599a4a-b79f-4979-826c-d8ca1fb35d24",
     "original_title": "Ethiopia Country Climate and Development Report, February 2024",
     "source": "World Bank Open Knowledge Repository",
-    "page_found": 3
+    "page_found": 3,
+    "id": "pub_022"
   },
   {
     "title": "MENA Country Climate and Development Report: Climate Change Action in the Middle East and North Africa — Key Insights from Country Climate and Development Reports",
@@ -1347,7 +1369,8 @@
     "source_url": "https://openknowledge.worldbank.org/entities/publication/94a57bfd-b009-45eb-86ab-0f3cbf9a3dff",
     "original_title": "MENA Country Climate and Development Report: Climate Change Action in the Middle East and North Africa — Key Insights from Country Climate and Development Reports",
     "source": "World Bank Open Knowledge Repository",
-    "page_found": 3
+    "page_found": 3,
+    "id": "pub_023"
   },
   {
     "title": "Benin Country Climate and Development Report",
@@ -1413,7 +1436,8 @@
     "source_url": "https://openknowledge.worldbank.org/entities/publication/ba015196-1772-44ad-9a83-846e57e37078",
     "original_title": "Benin Country Climate and Development Report",
     "source": "World Bank Open Knowledge Repository",
-    "page_found": 3
+    "page_found": 3,
+    "id": "pub_024"
   },
   {
     "title": "Dominican Republic Country Climate and Development Report",
@@ -1491,7 +1515,8 @@
     "source_url": "https://openknowledge.worldbank.org/entities/publication/92ff46b2-650d-4395-b1d4-9c51dcdc6448",
     "original_title": "Dominican Republic Country Climate and Development Report",
     "source": "World Bank Open Knowledge Repository",
-    "page_found": 3
+    "page_found": 3,
+    "id": "pub_025"
   },
   {
     "title": "West Bank and Gaza Country Climate and Development Report",
@@ -1533,7 +1558,8 @@
     "source_url": "https://openknowledge.worldbank.org/entities/publication/ece9f50d-cec0-465c-9e92-7281eff7634f",
     "original_title": "West Bank and Gaza Country Climate and Development Report",
     "source": "World Bank Open Knowledge Repository",
-    "page_found": 3
+    "page_found": 3,
+    "id": "pub_026"
   },
   {
     "title": "Tunisia Country Climate and Development Report",
@@ -1611,7 +1637,8 @@
     "source_url": "https://openknowledge.worldbank.org/entities/publication/66d30db7-bc0f-46fd-89bd-d983914147cc",
     "original_title": "Tunisia Country Climate and Development Report",
     "source": "World Bank Open Knowledge Repository",
-    "page_found": 3
+    "page_found": 3,
+    "id": "pub_027"
   },
   {
     "title": "Azerbaijan Country Climate and Development Report",
@@ -1665,7 +1692,8 @@
     "source_url": "https://openknowledge.worldbank.org/entities/publication/8dd535d5-126a-4181-8ffe-c0fa49b2599f",
     "original_title": "Azerbaijan Country Climate and Development Report",
     "source": "World Bank Open Knowledge Repository",
-    "page_found": 3
+    "page_found": 3,
+    "id": "pub_028"
   },
   {
     "title": "Uzbekistan Country Climate and Development Report",
@@ -1719,7 +1747,8 @@
     "source_url": "https://openknowledge.worldbank.org/entities/publication/686d0297-b311-4296-ab33-51d1859c6b32",
     "original_title": "Uzbekistan Country Climate and Development Report",
     "source": "World Bank Open Knowledge Repository",
-    "page_found": 3
+    "page_found": 3,
+    "id": "pub_029"
   },
   {
     "title": "Democratic Republic of Congo (DRC) Country Climate and Development Report",
@@ -1785,7 +1814,8 @@
     "source_url": "https://openknowledge.worldbank.org/entities/publication/b1dd27cc-249f-4380-9b73-80cb8f695a43",
     "original_title": "Democratic Republic of Congo (DRC) Country Climate and Development Report",
     "source": "World Bank Open Knowledge Repository",
-    "page_found": 3
+    "page_found": 3,
+    "id": "pub_030"
   },
   {
     "title": "Kenya Country Climate and Development Report",
@@ -1863,7 +1893,8 @@
     "source_url": "https://openknowledge.worldbank.org/entities/publication/b59c453d-c2cb-421d-909d-7c05cb0d4580",
     "original_title": "Kenya Country Climate and Development Report",
     "source": "World Bank Open Knowledge Repository",
-    "page_found": 4
+    "page_found": 4,
+    "id": "pub_031"
   },
   {
     "title": "Côte d’Ivoire Country Climate and Development Report",
@@ -1941,7 +1972,8 @@
     "source_url": "https://openknowledge.worldbank.org/entities/publication/a88651eb-86ce-49e3-b860-c4dc881498c1",
     "original_title": "Côte d’Ivoire Country Climate and Development Report",
     "source": "World Bank Open Knowledge Repository",
-    "page_found": 4
+    "page_found": 4,
+    "id": "pub_032"
   },
   {
     "title": "Romania Country Climate and Development Report",
@@ -1995,7 +2027,8 @@
     "source_url": "https://openknowledge.worldbank.org/entities/publication/b6dfeaca-c430-4877-9f2c-547885bf9cc1",
     "original_title": "Romania Country Climate and Development Report",
     "source": "World Bank Open Knowledge Repository",
-    "page_found": 4
+    "page_found": 4,
+    "id": "pub_033"
   },
   {
     "title": "Cambodia Country Climate and Development Report",
@@ -2049,7 +2082,8 @@
     "source_url": "https://openknowledge.worldbank.org/entities/publication/83b19efc-96d1-4be4-8240-28e0e7f13c9b",
     "original_title": "Cambodia Country Climate and Development Report",
     "source": "World Bank Open Knowledge Repository",
-    "page_found": 4
+    "page_found": 4,
+    "id": "pub_034"
   },
   {
     "title": "Republic of Congo Country Climate and Development Report - Diversifying Congo's Economy: Making the Most of Climate Change",
@@ -2103,7 +2137,8 @@
     "source_url": "https://openknowledge.worldbank.org/entities/publication/7304e935-8400-4694-b7cf-aabe3ffa19e0",
     "original_title": "Republic of Congo Country Climate and Development Report - Diversifying Congo's Economy: Making the Most of Climate Change",
     "source": "World Bank Open Knowledge Repository",
-    "page_found": 4
+    "page_found": 4,
+    "id": "pub_035"
   },
   {
     "title": "Colombia Country Climate and Development Report",
@@ -2169,7 +2204,8 @@
     "source_url": "https://openknowledge.worldbank.org/entities/publication/9b706816-2618-48d0-87d4-e7e99b7ad779",
     "original_title": "Colombia Country Climate and Development Report",
     "source": "World Bank Open Knowledge Repository",
-    "page_found": 4
+    "page_found": 4,
+    "id": "pub_036"
   },
   {
     "title": "Mozambique Country Climate and Development Report",
@@ -2223,7 +2259,8 @@
     "source_url": "https://openknowledge.worldbank.org/entities/publication/4afdfdb4-3b04-4716-9ff0-175c76b49097",
     "original_title": "Mozambique Country Climate and Development Report",
     "source": "World Bank Open Knowledge Repository",
-    "page_found": 4
+    "page_found": 4,
+    "id": "pub_037"
   },
   {
     "title": "Honduras Country Climate and Development Report",
@@ -2301,7 +2338,8 @@
     "source_url": "https://openknowledge.worldbank.org/entities/publication/cfe562d2-1a82-4e00-9b1f-d925c33668c6",
     "original_title": "Honduras Country Climate and Development Report",
     "source": "World Bank Open Knowledge Repository",
-    "page_found": 4
+    "page_found": 4,
+    "id": "pub_038"
   },
   {
     "title": "Brazil Country Climate and Development Report",
@@ -2379,7 +2417,8 @@
     "source_url": "https://openknowledge.worldbank.org/entities/publication/a713713d-0b47-4eb3-a162-be9a383c341b",
     "original_title": "Brazil Country Climate and Development Report",
     "source": "World Bank Open Knowledge Repository",
-    "page_found": 4
+    "page_found": 4,
+    "id": "pub_039"
   },
   {
     "title": "Indonesia Country Climate and Development Report",
@@ -2457,7 +2496,8 @@
     "source_url": "https://openknowledge.worldbank.org/entities/publication/c6b1d872-f487-4579-be3a-3cb6ba55dffa",
     "original_title": "Indonesia Country Climate and Development Report",
     "source": "World Bank Open Knowledge Repository",
-    "page_found": 4
+    "page_found": 4,
+    "id": "pub_040"
   },
   {
     "title": "Egypt Country Climate and Development Report",
@@ -2535,7 +2575,8 @@
     "source_url": "https://openknowledge.worldbank.org/entities/publication/597d2684-f4f3-511a-8341-1d7c40ab6df8",
     "original_title": "Egypt Country Climate and Development Report",
     "source": "World Bank Open Knowledge Repository",
-    "page_found": 5
+    "page_found": 5,
+    "id": "pub_041"
   },
   {
     "title": "Argentina Country Climate and Development Report",
@@ -2613,7 +2654,8 @@
     "source_url": "https://openknowledge.worldbank.org/entities/publication/0208826f-8ca9-5fa1-8e94-0eadd09ef29c",
     "original_title": "Argentina Country Climate and Development Report",
     "source": "World Bank Open Knowledge Repository",
-    "page_found": 5
+    "page_found": 5,
+    "id": "pub_042"
   },
   {
     "title": "Iraq Country Climate and Development Report",
@@ -2667,7 +2709,8 @@
     "source_url": "https://openknowledge.worldbank.org/entities/publication/7412a92b-4412-5acb-8fde-8d19048f80d1",
     "original_title": "Iraq Country Climate and Development Report",
     "source": "World Bank Open Knowledge Repository",
-    "page_found": 5
+    "page_found": 5,
+    "id": "pub_043"
   },
   {
     "title": "Philippines Country Climate and Development Report",
@@ -2745,7 +2788,8 @@
     "source_url": "https://openknowledge.worldbank.org/entities/publication/3f76eedd-4ab6-5250-ab4e-75f39593f1b3",
     "original_title": "Philippines Country Climate and Development Report",
     "source": "World Bank Open Knowledge Repository",
-    "page_found": 5
+    "page_found": 5,
+    "id": "pub_044"
   },
   {
     "title": "Pakistan Country Climate and Development Report",
@@ -2823,7 +2867,8 @@
     "source_url": "https://openknowledge.worldbank.org/entities/publication/614ddc2b-ca31-53c9-b59c-6bf12a56d336",
     "original_title": "Pakistan Country Climate and Development Report",
     "source": "World Bank Open Knowledge Repository",
-    "page_found": 5
+    "page_found": 5,
+    "id": "pub_045"
   },
   {
     "title": "Peru Country Climate and Development Report",
@@ -2901,7 +2946,8 @@
     "source_url": "https://openknowledge.worldbank.org/entities/publication/60ed071c-c750-521e-9400-289b7cdf4de5",
     "original_title": "Peru Country Climate and Development Report",
     "source": "World Bank Open Knowledge Repository",
-    "page_found": 5
+    "page_found": 5,
+    "id": "pub_046"
   },
   {
     "title": "Jordan Country Climate and Development Report",
@@ -2943,7 +2989,8 @@
     "source_url": "https://openknowledge.worldbank.org/entities/publication/662a4ef2-a49b-5119-8f32-9778a95794d5",
     "original_title": "Jordan Country Climate and Development Report",
     "source": "World Bank Open Knowledge Repository",
-    "page_found": 5
+    "page_found": 5,
+    "id": "pub_047"
   },
   {
     "title": "Kazakhstan Country Climate and Development Report",
@@ -3021,7 +3068,8 @@
     "source_url": "https://openknowledge.worldbank.org/entities/publication/dabff214-772e-50b4-89d9-a172e99accc3",
     "original_title": "Kazakhstan Country Climate and Development Report",
     "source": "World Bank Open Knowledge Repository",
-    "page_found": 5
+    "page_found": 5,
+    "id": "pub_048"
   },
   {
     "title": "South Africa Country Climate and Development Report",
@@ -3075,7 +3123,8 @@
     "source_url": "https://openknowledge.worldbank.org/entities/publication/c2ebae54-6812-51d3-ab72-08dd1431b873",
     "original_title": "South Africa Country Climate and Development Report",
     "source": "World Bank Open Knowledge Repository",
-    "page_found": 5
+    "page_found": 5,
+    "id": "pub_049"
   },
   {
     "title": "Ghana Country Climate and Development Report",
@@ -3117,7 +3166,8 @@
     "source_url": "https://openknowledge.worldbank.org/entities/publication/c735de13-aa4a-57f2-94be-d888816b83ba",
     "original_title": "Ghana Country Climate and Development Report",
     "source": "World Bank Open Knowledge Repository",
-    "page_found": 5
+    "page_found": 5,
+    "id": "pub_050"
   },
   {
     "title": "Bangladesh Country Climate and Development Report",
@@ -3195,7 +3245,8 @@
     "source_url": "https://openknowledge.worldbank.org/entities/publication/1d6b85c3-4959-5f93-af88-dda33f52ee37",
     "original_title": "Bangladesh Country Climate and Development Report",
     "source": "World Bank Open Knowledge Repository",
-    "page_found": 6
+    "page_found": 6,
+    "id": "pub_051"
   },
   {
     "title": "Morocco Country Climate and Development Report",
@@ -3273,7 +3324,8 @@
     "source_url": "https://openknowledge.worldbank.org/entities/publication/620e4ee9-e683-5821-b097-7c48062b42cf",
     "original_title": "Morocco Country Climate and Development Report",
     "source": "World Bank Open Knowledge Repository",
-    "page_found": 6
+    "page_found": 6,
+    "id": "pub_052"
   },
   {
     "title": "China Country Climate and Development Report",
@@ -3351,7 +3403,8 @@
     "source_url": "https://openknowledge.worldbank.org/entities/publication/ef01c04f-4417-51b6-8107-b688061a879e",
     "original_title": "China Country Climate and Development Report",
     "source": "World Bank Open Knowledge Repository",
-    "page_found": 6
+    "page_found": 6,
+    "id": "pub_053"
   },
   {
     "title": "Malawi Country Climate and Development Report",
@@ -3429,7 +3482,8 @@
     "source_url": "https://openknowledge.worldbank.org/entities/publication/ea68d466-764a-5c06-90c9-14105f558955",
     "original_title": "Malawi Country Climate and Development Report",
     "source": "World Bank Open Knowledge Repository",
-    "page_found": 6
+    "page_found": 6,
+    "id": "pub_054"
   },
   {
     "title": "Rwanda Country Climate and Development Report",
@@ -3483,7 +3537,8 @@
     "source_url": "https://openknowledge.worldbank.org/entities/publication/6b410886-99f8-555e-a884-0695218a8458",
     "original_title": "Rwanda Country Climate and Development Report",
     "source": "World Bank Open Knowledge Repository",
-    "page_found": 6
+    "page_found": 6,
+    "id": "pub_055"
   },
   {
     "title": "Nepal Country Climate and Development Report",
@@ -3549,7 +3604,8 @@
     "source_url": "https://openknowledge.worldbank.org/entities/publication/7b6f49e3-5431-5d48-94bb-c22ac1d3dcd1",
     "original_title": "Nepal Country Climate and Development Report",
     "source": "World Bank Open Knowledge Repository",
-    "page_found": 6
+    "page_found": 6,
+    "id": "pub_056"
   },
   {
     "title": "Vietnam Country Climate and Development Report",
@@ -3627,7 +3683,8 @@
     "source_url": "https://openknowledge.worldbank.org/entities/publication/29e72556-d255-5c50-a086-245c1ccc4704",
     "original_title": "Vietnam Country Climate and Development Report",
     "source": "World Bank Open Knowledge Repository",
-    "page_found": 6
+    "page_found": 6,
+    "id": "pub_057"
   },
   {
     "title": "G5 Sahel Region Country Climate and Development Report",
@@ -3693,7 +3750,8 @@
     "source_url": "https://openknowledge.worldbank.org/entities/publication/50936c70-3771-5618-8b3e-52e7c01be5f8",
     "original_title": "G5 Sahel Region Country Climate and Development Report",
     "source": "World Bank Open Knowledge Repository",
-    "page_found": 6
+    "page_found": 6,
+    "id": "pub_058"
   },
   {
     "title": "Türkiye Country Climate and Development Report",
@@ -3771,7 +3829,8 @@
     "source_url": "https://openknowledge.worldbank.org/entities/publication/01826a0c-059f-5a0c-91b7-2a6b8ec5de2f",
     "original_title": "Türkiye Country Climate and Development Report",
     "source": "World Bank Open Knowledge Repository",
-    "page_found": 6
+    "page_found": 6,
+    "id": "pub_059"
   },
   {
     "title": "Cameroon Country Climate and Development Report",
@@ -3825,7 +3884,8 @@
     "source_url": "https://openknowledge.worldbank.org/entities/publication/d600ba78-86f8-5e3a-a894-217b51253734",
     "original_title": "Cameroon Country Climate and Development Report",
     "source": "World Bank Open Knowledge Repository",
-    "page_found": 6
+    "page_found": 6,
+    "id": "pub_060"
   },
   {
     "title": "Angola Country Climate and Development Report",
@@ -3903,6 +3963,7 @@
     "source_url": "https://openknowledge.worldbank.org/entities/publication/f5d0bae7-8230-5d41-8466-b5031de9741e",
     "original_title": "Angola Country Climate and Development Report",
     "source": "World Bank Open Knowledge Repository",
-    "page_found": 7
+    "page_found": 7,
+    "id": "pub_061"
   }
 ]
