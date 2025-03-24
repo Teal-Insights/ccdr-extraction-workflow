@@ -1,3 +1,4 @@
 .env
 .specstory
 node_modules
+discovery/data/pub_*
