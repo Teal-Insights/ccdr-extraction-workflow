@@ -19,10 +19,17 @@ from logging import getLogger
 import asyncio
 from pathlib import Path
 from dotenv import load_dotenv
+import logging
 
 load_dotenv()
 
 logger = getLogger(__name__)
+
+# Add logging configuration
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 
 ############################################
 # Pydantic model(s) for the LLM output
@@ -198,10 +205,10 @@ async def process_publication_details(input_path: str) -> None:
     logger.info(f"Found {total_pubs} publications to process")
     
     # Track statistics
-    pubs_processed = 0
+    pubs_to_process = []
     pubs_skipped = 0
     
-    # Process each publication's download links
+    # Prepare list of publications that need processing
     for i, pub in enumerate(publications, 1):
         title = pub.get('title', 'Untitled')
         if "downloadLinks" not in pub or not pub["downloadLinks"]:
@@ -216,15 +223,29 @@ async def process_publication_details(input_path: str) -> None:
             continue
             
         num_links = len(pub["downloadLinks"])
-        logger.info(f"Processing publication {i}/{total_pubs}: {title} ({num_links} links)")
-        pub["downloadLinks"] = await classify_link_array(pub["downloadLinks"], title)
-        pubs_processed += 1
+        logger.info(f"Queuing publication {i}/{total_pubs}: {title} ({num_links} links)")
+        pubs_to_process.append((i, pub))
+    
+    # Process publications concurrently
+    if pubs_to_process:
+        logger.info(f"Processing {len(pubs_to_process)} publications concurrently")
+        # Create tasks for concurrent processing
+        tasks = []
+        for i, pub in pubs_to_process:
+            tasks.append(classify_link_array(pub["downloadLinks"], pub.get('title', 'Untitled')))
+        
+        # Wait for all tasks to complete
+        results = await asyncio.gather(*tasks)
+        
+        # Update publications with results
+        for (i, pub), result in zip(pubs_to_process, results):
+            pub["downloadLinks"] = result
     
     # Write the updated JSON back to the file
     logger.info(f"Writing updated publication details to {input_path}")
     with open(input_path, 'w', encoding='utf-8') as f:
         json.dump(publications, f, indent=2, ensure_ascii=False)
-    logger.info(f"Successfully processed {pubs_processed} publications (skipped {pubs_skipped})")
+    logger.info(f"Successfully processed {len(pubs_to_process)} publications (skipped {pubs_skipped})")
 
 async def main():
     """Main entry point for the script."""
