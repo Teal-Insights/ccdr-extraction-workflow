@@ -14,7 +14,7 @@
           "content_length": "unknown",
           "final_url": "https://openknowledge.worldbank.org/server/api/core/bitstreams/3badf232-532e-4522-baed-f37423aecde8/content"
         },
-        "to_download": false,
+        "to_download": true,
         "type": "main",
         "id": "dl_001"
       },
@@ -27,8 +27,8 @@
           "content_length": "unknown",
           "final_url": "https://openknowledge.worldbank.org/server/api/core/bitstreams/112d9204-c4bd-4c42-ba96-76eb9df14aa2/content"
         },
-        "to_download": true,
-        "type": "main",
+        "to_download": false,
+        "type": "other",
         "id": "dl_002"
       }
     ],
@@ -188,7 +188,7 @@
           "content_length": "unknown",
           "final_url": "https://openknowledge.worldbank.org/server/api/core/bitstreams/3da2a686-9139-4b92-81a4-3c76aaf189d5/content"
         },
-        "to_download": false,
+        "to_download": true,
         "type": "main",
         "id": "dl_010"
       },
@@ -201,7 +201,7 @@
           "content_length": "unknown",
           "final_url": "https://openknowledge.worldbank.org/server/api/core/bitstreams/ae5439a1-5a9f-4d45-903c-9d1678810b4c/content"
         },
-        "to_download": true,
+        "to_download": false,
         "type": "main",
         "id": "dl_011"
       },
@@ -215,7 +215,7 @@
           "final_url": "https://openknowledge.worldbank.org/server/api/core/bitstreams/ea1a2330-27ce-4c99-9a49-7749f9b2eaad/content"
         },
         "to_download": false,
-        "type": "supplemental",
+        "type": "main",
         "id": "dl_012"
       },
       {
@@ -228,7 +228,7 @@
           "final_url": "https://openknowledge.worldbank.org/server/api/core/bitstreams/3d70b099-6872-40ed-9005-27efdee42967/content"
         },
         "to_download": false,
-        "type": "supplemental",
+        "type": "main",
         "id": "dl_013"
       },
       {
@@ -241,7 +241,7 @@
           "final_url": "https://openknowledge.worldbank.org/server/api/core/bitstreams/edbfd6a9-e948-45b6-a690-18e6a12820e0/content"
         },
         "to_download": false,
-        "type": "other",
+        "type": "main",
         "id": "dl_014"
       }
     ],
@@ -272,7 +272,7 @@
           "content_length": "unknown",
           "final_url": "https://openknowledge.worldbank.org/server/api/core/bitstreams/268abc8d-8e0e-437b-9615-3fe8aa395693/content"
         },
-        "to_download": false,
+        "to_download": true,
         "type": "main",
         "id": "dl_015"
       },
@@ -285,8 +285,8 @@
           "content_length": "unknown",
           "final_url": "https://openknowledge.worldbank.org/server/api/core/bitstreams/4f851760-bbb2-4c0c-8f4e-6855a2b9a586/content"
         },
-        "to_download": true,
-        "type": "main",
+        "to_download": false,
+        "type": "other",
         "id": "dl_016"
       }
     ],
@@ -433,7 +433,7 @@
           "content_length": "unknown",
           "final_url": "https://openknowledge.worldbank.org/server/api/core/bitstreams/b60571cc-dca5-4a55-8e93-bb7d3f163a93/content"
         },
-        "to_download": false,
+        "to_download": true,
         "type": "main",
         "id": "dl_023"
       },
@@ -446,7 +446,7 @@
           "content_length": "unknown",
           "final_url": "https://openknowledge.worldbank.org/server/api/core/bitstreams/2bd9ba95-01e8-4492-8977-ab1a9ca8f251/content"
         },
-        "to_download": true,
+        "to_download": false,
         "type": "main",
         "id": "dl_024"
       },
@@ -562,7 +562,7 @@
           "content_length": "unknown",
           "final_url": "https://openknowledge.worldbank.org/server/api/core/bitstreams/6def6eed-84ad-4762-b875-d1748ee67ad0/content"
         },
-        "to_download": false,
+        "to_download": true,
         "type": "main",
         "id": "dl_030"
       },
@@ -575,8 +575,8 @@
           "content_length": "unknown",
           "final_url": "https://openknowledge.worldbank.org/server/api/core/bitstreams/e79862cd-f9ea-44b9-89fd-7572f6b52a2f/content"
         },
-        "to_download": true,
-        "type": "main",
+        "to_download": false,
+        "type": "other",
         "id": "dl_031"
       },
       {
@@ -646,7 +646,7 @@
           "content_length": "unknown",
           "final_url": "https://openknowledge.worldbank.org/server/api/core/bitstreams/18191092-31bc-47c0-b3cf-fa5782ed9690/content"
         },
-        "to_download": false,
+        "to_download": true,
         "type": "main",
         "id": "dl_035"
       },
@@ -659,8 +659,8 @@
           "content_length": "unknown",
           "final_url": "https://openknowledge.worldbank.org/server/api/core/bitstreams/0f4396f1-0c36-46c6-99c9-3d6de1279bbb/content"
         },
-        "to_download": true,
-        "type": "main",
+        "to_download": false,
+        "type": "supplemental",
         "id": "dl_036"
       },
       {
@@ -704,7 +704,7 @@
           "content_length": "unknown",
           "final_url": "https://openknowledge.worldbank.org/server/api/core/bitstreams/e1553b3b-3ce6-4800-8f93-476e7c89d21b/content"
         },
-        "to_download": false,
+        "to_download": true,
         "type": "main",
         "id": "dl_038"
       },
@@ -717,8 +717,8 @@
           "content_length": "unknown",
           "final_url": "https://openknowledge.worldbank.org/server/api/core/bitstreams/422a5976-2a7b-4e27-8278-f854fc4f5582/content"
         },
-        "to_download": true,
-        "type": "main",
+        "to_download": false,
+        "type": "supplemental",
         "id": "dl_039"
       },
       {
@@ -762,7 +762,7 @@
           "content_length": "unknown",
           "final_url": "https://openknowledge.worldbank.org/server/api/core/bitstreams/7d7218ff-7135-4942-99ba-e2bc1dcb81d8/content"
         },
-        "to_download": false,
+        "to_download": true,
         "type": "main",
         "id": "dl_041"
       },
@@ -775,7 +775,7 @@
           "content_length": "unknown",
           "final_url": "https://openknowledge.worldbank.org/server/api/core/bitstreams/c82e7d9b-6f0e-4154-b1ec-97cd786e251e/content"
         },
-        "to_download": true,
+        "to_download": false,
         "type": "main",
         "id": "dl_042"
       },
@@ -846,7 +846,7 @@
           "content_length": "unknown",
           "final_url": "https://openknowledge.worldbank.org/server/api/core/bitstreams/61008cee-85d0-4abf-882f-329237d941dc/content"
         },
-        "to_download": false,
+        "to_download": true,
         "type": "main",
         "id": "dl_046"
       },
@@ -859,7 +859,7 @@
           "content_length": "unknown",
           "final_url": "https://openknowledge.worldbank.org/server/api/core/bitstreams/4bae3f69-a535-4f2f-8bc6-6e2259d5efc6/content"
         },
-        "to_download": true,
+        "to_download": false,
         "type": "main",
         "id": "dl_047"
       },
@@ -988,7 +988,7 @@
           "content_length": "unknown",
           "final_url": "https://openknowledge.worldbank.org/server/api/core/bitstreams/34af663f-ee69-400e-8cfd-63fbeef1e49c/content"
         },
-        "to_download": false,
+        "to_download": true,
         "type": "main",
         "id": "dl_054"
       },
@@ -1001,8 +1001,8 @@
           "content_length": "unknown",
           "final_url": "https://openknowledge.worldbank.org/server/api/core/bitstreams/b350fc29-b3a7-4347-9b96-7bc63970915a/content"
         },
-        "to_download": true,
-        "type": "main",
+        "to_download": false,
+        "type": "supplemental",
         "id": "dl_055"
       },
       {
@@ -1015,7 +1015,7 @@
           "final_url": "https://openknowledge.worldbank.org/server/api/core/bitstreams/28531afa-49be-49b9-b6d6-3d4ae5f2ac67/content"
         },
         "to_download": false,
-        "type": "supplemental",
+        "type": "other",
         "id": "dl_056"
       },
       {
@@ -1028,7 +1028,7 @@
           "final_url": "https://openknowledge.worldbank.org/server/api/core/bitstreams/cec17bf6-834c-46e3-9b22-fa0fbb4fa894/content"
         },
         "to_download": false,
-        "type": "supplemental",
+        "type": "other",
         "id": "dl_057"
       }
     ],
@@ -1059,7 +1059,7 @@
           "content_length": "unknown",
           "final_url": "https://openknowledge.worldbank.org/server/api/core/bitstreams/df366f08-cb51-4766-b97d-6fca6feede48/content"
         },
-        "to_download": false,
+        "to_download": true,
         "type": "main",
         "id": "dl_058"
       },
@@ -1072,7 +1072,7 @@
           "content_length": "unknown",
           "final_url": "https://openknowledge.worldbank.org/server/api/core/bitstreams/9acd0b61-944a-487c-8031-2453b81b5a52/content"
         },
-        "to_download": true,
+        "to_download": false,
         "type": "main",
         "id": "dl_059"
       },
@@ -1098,8 +1098,8 @@
           "content_length": "unknown",
           "final_url": "https://openknowledge.worldbank.org/server/api/core/bitstreams/430b2d06-1440-4ef0-bc63-a673860fc193/content"
         },
-        "to_download": false,
-        "type": "other",
+        "to_download": true,
+        "type": "supplemental",
         "id": "dl_061"
       },
       {
@@ -1111,8 +1111,8 @@
           "content_length": "unknown",
           "final_url": "https://openknowledge.worldbank.org/server/api/core/bitstreams/367134df-c7f6-4899-ae87-fc217d523c97/content"
         },
-        "to_download": false,
-        "type": "other",
+        "to_download": true,
+        "type": "supplemental",
         "id": "dl_062"
       }
     ],
@@ -1227,7 +1227,7 @@
           "content_length": "unknown",
           "final_url": "https://openknowledge.worldbank.org/server/api/core/bitstreams/17d0f4dc-b7ff-4618-b743-2087783c450c/content"
         },
-        "to_download": false,
+        "to_download": true,
         "type": "main",
         "id": "dl_068"
       },
@@ -1240,7 +1240,7 @@
           "content_length": "unknown",
           "final_url": "https://openknowledge.worldbank.org/server/api/core/bitstreams/a9c573e9-c53c-4127-84a3-1b37b795ad19/content"
         },
-        "to_download": true,
+        "to_download": false,
         "type": "main",
         "id": "dl_069"
       },
@@ -1285,7 +1285,7 @@
           "content_length": "495",
           "final_url": "https://openknowledge.worldbank.org/bitstreams/073c1e7e-4631-4e5d-b0b4-3c653fb491e6/download"
         },
-        "to_download": false,
+        "to_download": true,
         "type": "main",
         "id": "dl_071"
       },
@@ -1298,8 +1298,8 @@
           "content_length": "495",
           "final_url": "https://openknowledge.worldbank.org/bitstreams/544c538e-83f9-4775-b15e-80ff9afc9344/download"
         },
-        "to_download": true,
-        "type": "main",
+        "to_download": false,
+        "type": "other",
         "id": "dl_072"
       }
     ],
@@ -1330,7 +1330,7 @@
           "content_length": "495",
           "final_url": "https://openknowledge.worldbank.org/bitstreams/a7e43475-55b0-4b6c-bfb1-5c23ebad1957/download"
         },
-        "to_download": false,
+        "to_download": true,
         "type": "main",
         "id": "dl_073"
       },
@@ -1343,8 +1343,8 @@
           "content_length": "495",
           "final_url": "https://openknowledge.worldbank.org/bitstreams/47fd7cea-774e-448e-a6eb-1215aba3378b/download"
         },
-        "to_download": true,
-        "type": "main",
+        "to_download": false,
+        "type": "other",
         "id": "dl_074"
       }
     ],
@@ -1375,7 +1375,7 @@
           "content_length": "495",
           "final_url": "https://openknowledge.worldbank.org/bitstreams/715c3822-4a9d-437f-8b3c-89585f7fe3b0/download"
         },
-        "to_download": false,
+        "to_download": true,
         "type": "main",
         "id": "dl_075"
       },
@@ -1388,8 +1388,8 @@
           "content_length": "495",
           "final_url": "https://openknowledge.worldbank.org/bitstreams/b0b2f199-fe32-4d0e-9a33-1cba53d86462/download"
         },
-        "to_download": true,
-        "type": "main",
+        "to_download": false,
+        "type": "other",
         "id": "dl_076"
       },
       {
@@ -1465,7 +1465,7 @@
           "content_length": "495",
           "final_url": "https://openknowledge.worldbank.org/bitstreams/262a447e-9f65-4e9b-9e84-5f8c399b42dc/download"
         },
-        "to_download": false,
+        "to_download": true,
         "type": "main",
         "id": "dl_079"
       },
@@ -1478,8 +1478,8 @@
           "content_length": "495",
           "final_url": "https://openknowledge.worldbank.org/bitstreams/a36a3457-dfab-4239-939c-28c5d252d2dc/download"
         },
-        "to_download": true,
-        "type": "main",
+        "to_download": false,
+        "type": "supplemental",
         "id": "dl_080"
       },
       {
@@ -1536,7 +1536,7 @@
           "content_length": "495",
           "final_url": "https://openknowledge.worldbank.org/bitstreams/89f67367-f915-4369-8f30-9afbc6d89741/download"
         },
-        "to_download": false,
+        "to_download": true,
         "type": "main",
         "id": "dl_083"
       },
@@ -1549,7 +1549,7 @@
           "content_length": "495",
           "final_url": "https://openknowledge.worldbank.org/bitstreams/e4e889f5-582f-4cbd-9394-b67a65b21cd2/download"
         },
-        "to_download": true,
+        "to_download": false,
         "type": "main",
         "id": "dl_084"
       },
@@ -1620,7 +1620,7 @@
           "content_length": "495",
           "final_url": "https://openknowledge.worldbank.org/bitstreams/8f2474ab-d3dc-467c-b625-c000623a68c2/download"
         },
-        "to_download": false,
+        "to_download": true,
         "type": "main",
         "id": "dl_088"
       },
@@ -1633,8 +1633,8 @@
           "content_length": "495",
           "final_url": "https://openknowledge.worldbank.org/bitstreams/51f3f0c4-f0ff-4c68-b777-c364ba70dea9/download"
         },
-        "to_download": true,
-        "type": "main",
+        "to_download": false,
+        "type": "other",
         "id": "dl_089"
       }
     ],
@@ -1749,7 +1749,7 @@
           "content_length": "495",
           "final_url": "https://openknowledge.worldbank.org/bitstreams/915eb2e5-ee71-45b5-99ee-009337fca253/download"
         },
-        "to_download": false,
+        "to_download": true,
         "type": "main",
         "id": "dl_095"
       },
@@ -1762,8 +1762,8 @@
           "content_length": "495",
           "final_url": "https://openknowledge.worldbank.org/bitstreams/e6b2f828-cf6d-401f-9b22-cfd55239b917/download"
         },
-        "to_download": true,
-        "type": "main",
+        "to_download": false,
+        "type": "supplemental",
         "id": "dl_096"
       },
       {
@@ -1807,7 +1807,7 @@
           "content_length": "495",
           "final_url": "https://openknowledge.worldbank.org/bitstreams/a85f766d-e26f-402d-9bbe-effddbbe70fe/download"
         },
-        "to_download": false,
+        "to_download": true,
         "type": "main",
         "id": "dl_098"
       },
@@ -1820,8 +1820,8 @@
           "content_length": "495",
           "final_url": "https://openknowledge.worldbank.org/bitstreams/7dccc340-f736-4af2-846c-03e696ed2919/download"
         },
-        "to_download": true,
-        "type": "main",
+        "to_download": false,
+        "type": "other",
         "id": "dl_099"
       },
       {
@@ -1865,7 +1865,7 @@
           "content_length": "495",
           "final_url": "https://openknowledge.worldbank.org/bitstreams/97d3a673-58ff-4b25-b743-8ff7e45425a6/download"
         },
-        "to_download": false,
+        "to_download": true,
         "type": "main",
         "id": "dl_101"
       },
@@ -1878,8 +1878,8 @@
           "content_length": "495",
           "final_url": "https://openknowledge.worldbank.org/bitstreams/47f96e99-2e9a-48a2-b0fc-e8862ba478e5/download"
         },
-        "to_download": true,
-        "type": "main",
+        "to_download": false,
+        "type": "other",
         "id": "dl_102"
       },
       {
@@ -1892,7 +1892,7 @@
           "final_url": "https://openknowledge.worldbank.org/bitstreams/da5356f5-60f2-4842-9470-29eae7d6146e/download"
         },
         "to_download": false,
-        "type": "supplemental",
+        "type": "other",
         "id": "dl_103"
       },
       {
@@ -1936,7 +1936,7 @@
           "content_length": "495",
           "final_url": "https://openknowledge.worldbank.org/bitstreams/a5203f40-25c8-42c5-8338-7e11730e7c4e/download"
         },
-        "to_download": false,
+        "to_download": true,
         "type": "main",
         "id": "dl_105"
       },
@@ -2020,7 +2020,7 @@
           "content_length": "495",
           "final_url": "https://openknowledge.worldbank.org/bitstreams/79b4732d-63a6-41ea-bfff-75f656a826f5/download"
         },
-        "to_download": false,
+        "to_download": true,
         "type": "main",
         "id": "dl_110"
       },
@@ -2046,7 +2046,7 @@
           "content_length": "495",
           "final_url": "https://openknowledge.worldbank.org/bitstreams/29c6ddc6-e4a0-41ab-bab6-ccdc365c77b6/download"
         },
-        "to_download": true,
+        "to_download": false,
         "type": "main",
         "id": "dl_112"
       },
@@ -2060,7 +2060,7 @@
           "final_url": "https://openknowledge.worldbank.org/bitstreams/394b9ab5-878b-42bd-bd19-374d05aac64e/download"
         },
         "to_download": false,
-        "type": "other",
+        "type": "main",
         "id": "dl_113"
       },
       {
@@ -2073,7 +2073,7 @@
           "final_url": "https://openknowledge.worldbank.org/bitstreams/2b36b119-67fd-4a7b-bcb5-548dd0e7d85d/download"
         },
         "to_download": false,
-        "type": "other",
+        "type": "main",
         "id": "dl_114"
       }
     ],
@@ -2104,7 +2104,7 @@
           "content_length": "495",
           "final_url": "https://openknowledge.worldbank.org/bitstreams/9693d7f2-e4b9-45c9-ac1c-ca28146e0248/download"
         },
-        "to_download": false,
+        "to_download": true,
         "type": "main",
         "id": "dl_115"
       },
@@ -2117,8 +2117,8 @@
           "content_length": "495",
           "final_url": "https://openknowledge.worldbank.org/bitstreams/a30f00ce-77ad-4fd6-9257-d781ada53d1b/download"
         },
-        "to_download": true,
-        "type": "main",
+        "to_download": false,
+        "type": "supplemental",
         "id": "dl_116"
       },
       {
@@ -2162,7 +2162,7 @@
           "content_length": "495",
           "final_url": "https://openknowledge.worldbank.org/bitstreams/e130351c-4fd4-4148-af2e-aeecb47d7366/download"
         },
-        "to_download": false,
+        "to_download": true,
         "type": "main",
         "id": "dl_118"
       },
@@ -2175,8 +2175,8 @@
           "content_length": "495",
           "final_url": "https://openknowledge.worldbank.org/bitstreams/0246a6db-4ba3-4d94-bc72-0c31493bc613/download"
         },
-        "to_download": true,
-        "type": "main",
+        "to_download": false,
+        "type": "other",
         "id": "dl_119"
       },
       {
@@ -2188,7 +2188,7 @@
           "content_length": "495",
           "final_url": "https://openknowledge.worldbank.org/bitstreams/db1aac1a-6e57-4563-8664-2e30b11538f8/download"
         },
-        "to_download": true,
+        "to_download": false,
         "type": "supplemental",
         "id": "dl_120"
       }
@@ -2220,7 +2220,7 @@
           "content_length": "495",
           "final_url": "https://openknowledge.worldbank.org/bitstreams/0cd4b1e0-963a-4004-9a6f-f43919700d52/download"
         },
-        "to_download": false,
+        "to_download": true,
         "type": "main",
         "id": "dl_121"
       },
@@ -2233,8 +2233,8 @@
           "content_length": "495",
           "final_url": "https://openknowledge.worldbank.org/bitstreams/05164ea2-f134-40b7-b81e-ebfc7e45864f/download"
         },
-        "to_download": true,
-        "type": "main",
+        "to_download": false,
+        "type": "supplemental",
         "id": "dl_122"
       },
       {
@@ -2278,7 +2278,7 @@
           "content_length": "495",
           "final_url": "https://openknowledge.worldbank.org/bitstreams/90feb71e-cdf2-476e-8299-dde20074a309/download"
         },
-        "to_download": false,
+        "to_download": true,
         "type": "main",
         "id": "dl_124"
       },
@@ -2291,8 +2291,8 @@
           "content_length": "495",
           "final_url": "https://openknowledge.worldbank.org/bitstreams/54dd7327-63cc-4d40-8ab2-8408f9573f0c/download"
         },
-        "to_download": true,
-        "type": "main",
+        "to_download": false,
+        "type": "other",
         "id": "dl_125"
       },
       {
@@ -2305,7 +2305,7 @@
           "final_url": "https://openknowledge.worldbank.org/bitstreams/d025fec0-ff90-4d3e-b49f-f57ce74a79ad/download"
         },
         "to_download": false,
-        "type": "supplemental",
+        "type": "other",
         "id": "dl_126"
       },
       {
@@ -2318,7 +2318,7 @@
           "final_url": "https://openknowledge.worldbank.org/bitstreams/b897242d-ab21-4933-b9c9-5c4e9ff15936/download"
         },
         "to_download": false,
-        "type": "supplemental",
+        "type": "other",
         "id": "dl_127"
       }
     ],
@@ -2349,7 +2349,7 @@
           "content_length": "495",
           "final_url": "https://openknowledge.worldbank.org/bitstreams/2b9fa284-479a-4f38-9cd8-b39a569b4e7b/download"
         },
-        "to_download": false,
+        "to_download": true,
         "type": "main",
         "id": "dl_128"
       },
@@ -2362,8 +2362,8 @@
           "content_length": "495",
           "final_url": "https://openknowledge.worldbank.org/bitstreams/02722265-ecc2-40cd-abab-84f2d5d3a80c/download"
         },
-        "to_download": true,
-        "type": "main",
+        "to_download": false,
+        "type": "supplemental",
         "id": "dl_129"
       },
       {
@@ -2407,7 +2407,7 @@
           "content_length": "495",
           "final_url": "https://openknowledge.worldbank.org/bitstreams/761f49d0-61dd-4807-bc02-af7cbf40c545/download"
         },
-        "to_download": false,
+        "to_download": true,
         "type": "main",
         "id": "dl_131"
       },
@@ -2420,7 +2420,7 @@
           "content_length": "495",
           "final_url": "https://openknowledge.worldbank.org/bitstreams/db546163-c1e0-4446-9c64-9b5225dc7313/download"
         },
-        "to_download": false,
+        "to_download": true,
         "type": "supplemental",
         "id": "dl_132"
       },
@@ -2433,8 +2433,8 @@
           "content_length": "495",
           "final_url": "https://openknowledge.worldbank.org/bitstreams/827b8d78-466a-453e-9159-f21d0d15061e/download"
         },
-        "to_download": true,
-        "type": "main",
+        "to_download": false,
+        "type": "other",
         "id": "dl_133"
       },
       {
@@ -2447,7 +2447,7 @@
           "final_url": "https://openknowledge.worldbank.org/bitstreams/91160c76-1202-47db-b32f-02f90902f1d2/download"
         },
         "to_download": false,
-        "type": "main",
+        "type": "other",
         "id": "dl_134"
       },
       {
@@ -2460,7 +2460,7 @@
           "final_url": "https://openknowledge.worldbank.org/bitstreams/7fd48bbe-16d9-4171-be8d-4a67b0e65271/download"
         },
         "to_download": false,
-        "type": "supplemental",
+        "type": "other",
         "id": "dl_135"
       }
     ],
@@ -2575,7 +2575,7 @@
           "content_length": "495",
           "final_url": "https://openknowledge.worldbank.org/bitstreams/97ed886f-3a18-4301-ba8d-998bc23d8041/download"
         },
-        "to_download": false,
+        "to_download": true,
         "type": "main",
         "id": "dl_141"
       },
@@ -2588,8 +2588,8 @@
           "content_length": "495",
           "final_url": "https://openknowledge.worldbank.org/bitstreams/b3b47f29-33a4-4a80-bc5e-3970864502e4/download"
         },
-        "to_download": true,
-        "type": "main",
+        "to_download": false,
+        "type": "other",
         "id": "dl_142"
       },
       {
@@ -2601,7 +2601,7 @@
           "content_length": "495",
           "final_url": "https://openknowledge.worldbank.org/bitstreams/816ae78d-a303-4d67-b5e1-f860f958cb9f/download"
         },
-        "to_download": true,
+        "to_download": false,
         "type": "supplemental",
         "id": "dl_143"
       },
@@ -2672,7 +2672,7 @@
           "content_length": "495",
           "final_url": "https://openknowledge.worldbank.org/bitstreams/877259ce-4038-5741-8e78-038d27492e95/download"
         },
-        "to_download": true,
+        "to_download": false,
         "type": "supplemental",
         "id": "dl_147"
       },
@@ -2685,7 +2685,7 @@
           "content_length": "495",
           "final_url": "https://openknowledge.worldbank.org/bitstreams/75db87a5-7b50-5006-860c-94fb0092d382/download"
         },
-        "to_download": true,
+        "to_download": false,
         "type": "supplemental",
         "id": "dl_148"
       },
@@ -2699,7 +2699,7 @@
           "final_url": "https://openknowledge.worldbank.org/bitstreams/9f16ba2f-e765-4b68-aa3d-09e4c19cb17c/download"
         },
         "to_download": false,
-        "type": "main",
+        "type": "other",
         "id": "dl_149"
       },
       {
@@ -2712,7 +2712,7 @@
           "final_url": "https://openknowledge.worldbank.org/bitstreams/ecff8c4a-2c7c-4592-ac25-0fa375f8ddf5/download"
         },
         "to_download": false,
-        "type": "supplemental",
+        "type": "other",
         "id": "dl_150"
       }
     ],
@@ -2757,7 +2757,7 @@
           "final_url": "https://openknowledge.worldbank.org/bitstreams/2d91534e-e769-590b-b32c-c6b9cc2363d5/download"
         },
         "to_download": false,
-        "type": "main",
+        "type": "other",
         "id": "dl_152"
       },
       {
@@ -2827,7 +2827,7 @@
           "content_length": "495",
           "final_url": "https://openknowledge.worldbank.org/bitstreams/cf2a2b54-559b-5909-ada8-af36b21bd4da/download"
         },
-        "to_download": false,
+        "to_download": true,
         "type": "main",
         "id": "dl_156"
       },
@@ -2840,8 +2840,8 @@
           "content_length": "495",
           "final_url": "https://openknowledge.worldbank.org/bitstreams/c2e30f17-0d71-4590-9bec-fbc402433ef0/download"
         },
-        "to_download": true,
-        "type": "main",
+        "to_download": false,
+        "type": "supplemental",
         "id": "dl_157"
       },
       {
@@ -2885,7 +2885,7 @@
           "content_length": "495",
           "final_url": "https://openknowledge.worldbank.org/bitstreams/89c5660d-4d58-5466-83d0-e767c675614a/download"
         },
-        "to_download": false,
+        "to_download": true,
         "type": "main",
         "id": "dl_159"
       },
@@ -2899,7 +2899,7 @@
           "final_url": "https://openknowledge.worldbank.org/bitstreams/1ea2dd11-0471-5be6-b970-e1da55591fa0/download"
         },
         "to_download": false,
-        "type": "main",
+        "type": "supplemental",
         "id": "dl_160"
       },
       {
@@ -2969,7 +2969,7 @@
           "content_length": "495",
           "final_url": "https://openknowledge.worldbank.org/bitstreams/2d1af64a-8d35-5946-a047-17dc143797ad/download"
         },
-        "to_download": false,
+        "to_download": true,
         "type": "main",
         "id": "dl_164"
       },
@@ -2995,8 +2995,8 @@
           "content_length": "495",
           "final_url": "https://openknowledge.worldbank.org/bitstreams/8ca0b138-16b0-5d33-ab19-a422e44d6fd4/download"
         },
-        "to_download": true,
-        "type": "main",
+        "to_download": false,
+        "type": "supplemental",
         "id": "dl_166"
       },
       {
@@ -3022,7 +3022,7 @@
           "final_url": "https://openknowledge.worldbank.org/bitstreams/4cd7e94d-e280-4a8f-ac31-78f322c379cd/download"
         },
         "to_download": true,
-        "type": "supplemental",
+        "type": "main",
         "id": "dl_168"
       }
     ],
@@ -3093,7 +3093,7 @@
           "final_url": "https://openknowledge.worldbank.org/bitstreams/60a6634d-df1c-574d-80ab-4725d6169781/download"
         },
         "to_download": false,
-        "type": "other",
+        "type": "main",
         "id": "dl_172"
       },
       {
@@ -3106,7 +3106,7 @@
           "final_url": "https://openknowledge.worldbank.org/bitstreams/31675794-ab9a-5466-9e46-6608cc6dab64/download"
         },
         "to_download": false,
-        "type": "other",
+        "type": "supplemental",
         "id": "dl_173"
       }
     ],
@@ -3137,7 +3137,7 @@
           "content_length": "495",
           "final_url": "https://openknowledge.worldbank.org/bitstreams/7c81ff9b-6f43-5648-be15-b2e2b25d1d33/download"
         },
-        "to_download": false,
+        "to_download": true,
         "type": "main",
         "id": "dl_174"
       },
@@ -3150,8 +3150,8 @@
           "content_length": "495",
           "final_url": "https://openknowledge.worldbank.org/bitstreams/d6678f0c-d860-559b-99fa-e31ab663cd95/download"
         },
-        "to_download": true,
-        "type": "main",
+        "to_download": false,
+        "type": "other",
         "id": "dl_175"
       }
     ],
@@ -3266,7 +3266,7 @@
           "content_length": "495",
           "final_url": "https://openknowledge.worldbank.org/bitstreams/52409ffd-96f7-58d4-be7f-c8114abbd4c5/download"
         },
-        "to_download": false,
+        "to_download": true,
         "type": "main",
         "id": "dl_181"
       },
@@ -3292,8 +3292,8 @@
           "content_length": "495",
           "final_url": "https://openknowledge.worldbank.org/bitstreams/97882814-9c1c-42a7-aad8-2e1c0cdbb533/download"
         },
-        "to_download": true,
-        "type": "main",
+        "to_download": false,
+        "type": "other",
         "id": "dl_183"
       }
     ],
@@ -3324,7 +3324,7 @@
           "content_length": "495",
           "final_url": "https://openknowledge.worldbank.org/bitstreams/9c9764c1-076d-5dcc-8339-6e4f0de2b610/download"
         },
-        "to_download": false,
+        "to_download": true,
         "type": "main",
         "id": "dl_184"
       },
@@ -3337,8 +3337,8 @@
           "content_length": "495",
           "final_url": "https://openknowledge.worldbank.org/bitstreams/08ab66bc-6f69-463f-aa77-4e852db44f4c/download"
         },
-        "to_download": true,
-        "type": "main",
+        "to_download": false,
+        "type": "other",
         "id": "dl_185"
       }
     ],
@@ -3537,7 +3537,7 @@
           "content_length": "495",
           "final_url": "https://openknowledge.worldbank.org/bitstreams/35ea9337-dfcf-5d60-9806-65913459d928/download"
         },
-        "to_download": false,
+        "to_download": true,
         "type": "main",
         "id": "dl_196"
       },
@@ -3563,8 +3563,8 @@
           "content_length": "495",
           "final_url": "https://openknowledge.worldbank.org/bitstreams/3cf6d04a-d16f-46de-9d09-09d50cdefad8/download"
         },
-        "to_download": true,
-        "type": "main",
+        "to_download": false,
+        "type": "supplemental",
         "id": "dl_198"
       },
       {
@@ -3621,7 +3621,7 @@
           "content_length": "495",
           "final_url": "https://openknowledge.worldbank.org/bitstreams/bbcae1ac-127f-5219-a490-c80012bfea8f/download"
         },
-        "to_download": false,
+        "to_download": true,
         "type": "main",
         "id": "dl_201"
       },
@@ -3718,8 +3718,8 @@
           "content_length": "495",
           "final_url": "https://openknowledge.worldbank.org/bitstreams/8b4dc9e2-ef7a-523c-bf2a-911838caa20c/download"
         },
-        "to_download": false,
-        "type": "supplemental",
+        "to_download": true,
+        "type": "main",
         "id": "dl_207"
       },
       {
@@ -3731,7 +3731,7 @@
           "content_length": "495",
           "final_url": "https://openknowledge.worldbank.org/bitstreams/c11722e6-77f4-4fa3-93c5-04453aa55bf6/download"
         },
-        "to_download": true,
+        "to_download": false,
         "type": "main",
         "id": "dl_208"
       }
@@ -3763,8 +3763,8 @@
           "content_length": "495",
           "final_url": "https://openknowledge.worldbank.org/bitstreams/b7f9d77f-aff8-4d52-a3cb-f717121944a4/download"
         },
-        "to_download": true,
-        "type": "main",
+        "to_download": false,
+        "type": "other",
         "id": "dl_209"
       },
       {
@@ -3776,7 +3776,7 @@
           "content_length": "495",
           "final_url": "https://openknowledge.worldbank.org/bitstreams/30a1cb25-232c-41ab-bd96-7046d446c2fc/download"
         },
-        "to_download": false,
+        "to_download": true,
         "type": "main",
         "id": "dl_210"
       },
@@ -3918,7 +3918,7 @@
           "content_length": "495",
           "final_url": "https://openknowledge.worldbank.org/bitstreams/197f07e0-d3ec-48bc-9d52-38d551d5d312/download"
         },
-        "to_download": false,
+        "to_download": true,
         "type": "main",
         "id": "dl_218"
       },
@@ -3931,7 +3931,7 @@
           "content_length": "495",
           "final_url": "https://openknowledge.worldbank.org/bitstreams/dc86f266-37b0-5075-8ceb-6fa8fdf74562/download"
         },
-        "to_download": true,
+        "to_download": false,
         "type": "main",
         "id": "dl_219"
       },
@@ -3945,7 +3945,7 @@
           "final_url": "https://openknowledge.worldbank.org/bitstreams/80738fd0-5a36-41cd-ae0f-28221963db39/download"
         },
         "to_download": false,
-        "type": "other",
+        "type": "main",
         "id": "dl_220"
       },
       {
@@ -3989,7 +3989,7 @@
           "content_length": "495",
           "final_url": "https://openknowledge.worldbank.org/bitstreams/80bdfcf8-73b1-42b3-b107-1629f64a1f0c/download"
         },
-        "to_download": false,
+        "to_download": true,
         "type": "main",
         "id": "dl_222"
       },
@@ -4002,8 +4002,8 @@
           "content_length": "495",
           "final_url": "https://openknowledge.worldbank.org/bitstreams/bea0d1f4-be22-5d67-9e16-e3f6614c56ff/download"
         },
-        "to_download": true,
-        "type": "main",
+        "to_download": false,
+        "type": "supplemental",
         "id": "dl_223"
       },
       {
@@ -4073,7 +4073,7 @@
           "content_length": "495",
           "final_url": "https://openknowledge.worldbank.org/bitstreams/9deeaf4b-a936-5e56-9397-21780f1d764d/download"
         },
-        "to_download": false,
+        "to_download": true,
         "type": "main",
         "id": "dl_227"
       },
@@ -4086,8 +4086,8 @@
           "content_length": "495",
           "final_url": "https://openknowledge.worldbank.org/bitstreams/f37a6463-152d-4cc2-a32d-467f8c14dedd/download"
         },
-        "to_download": true,
-        "type": "main",
+        "to_download": false,
+        "type": "supplemental",
         "id": "dl_228"
       },
       {
@@ -4131,7 +4131,7 @@
           "content_length": "495",
           "final_url": "https://openknowledge.worldbank.org/bitstreams/b22cb94b-42e7-5800-846d-4d90435d3a9b/download"
         },
-        "to_download": false,
+        "to_download": true,
         "type": "main",
         "id": "dl_230"
       },
@@ -4144,8 +4144,8 @@
           "content_length": "495",
           "final_url": "https://openknowledge.worldbank.org/bitstreams/99772ed7-bdb5-5502-9f5a-7cec14e944f9/download"
         },
-        "to_download": true,
-        "type": "main",
+        "to_download": false,
+        "type": "other",
         "id": "dl_231"
       },
       {
@@ -4171,7 +4171,7 @@
           "final_url": "https://openknowledge.worldbank.org/bitstreams/17ffddb1-d06b-5411-a322-9634f2325492/download"
         },
         "to_download": false,
-        "type": "other",
+        "type": "main",
         "id": "dl_233"
       },
       {
@@ -4184,7 +4184,7 @@
           "final_url": "https://openknowledge.worldbank.org/bitstreams/c8bc246d-edc3-5a23-8067-674404f296cf/download"
         },
         "to_download": false,
-        "type": "other",
+        "type": "supplemental",
         "id": "dl_234"
       }
     ],
