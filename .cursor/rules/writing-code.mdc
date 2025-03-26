@@ -13,8 +13,8 @@ Remember to *never* hard-code secrets in scripts. Secrets may be written to `.en
 
 ## Working with `llm`
 
-Use the `llm` tool with the `-m` flag to specify `gemini-2.0-flash-001`:
+Use the `llm` tool with the `-m` flag to specify `gemini-2.5-pro`:
 
 ```bash
-cat llm "Review the following file and add the following desired features: Feature 1, Feature 2, Feature 3. ($cat script.py)" -m gemini-2.0-flash-001 > artifacts/repo-summary.md
+cat llm "Review the following file and add the following desired features: Feature 1, Feature 2, Feature 3. ($cat script.py)" -m gemini-2.5-pro > artifacts/repo-summary.md
 ```
