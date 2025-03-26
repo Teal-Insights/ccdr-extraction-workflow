@@ -17,10 +17,9 @@ The text is chunked by line breaks, with a max chunk length of 2500 characters. 
 ```mermaid
 graph TB
     subgraph "Data Collection"
-        C["Cursor Agent<br>(Claude 3.7 Sonnet)"] -- finds --> B["Data Sources<br>(Web/APIs)"]
+        C["Cursor Agent<br>(Claude 3.7 Sonnet)"] <-- finds --> B["Data Sources<br>(Web/APIs)"]
         C -- writes --> D["Extraction Scripts<br>(Node.js)"]
-        D -- scrapes --> B
-        B --> D
+        D <-- scrapes --> B
         D --> F["Raw Data"]
     end
 
@@ -31,13 +30,20 @@ graph TB
         K --> L["Database Upsert<br>(Drizzle ORM)"]
     end
 
-    subgraph "Database & Vector Storage"
+    subgraph "Database & Storage"
         L --> M["PostgreSQL with pgvector"]
-        M -- Stores --> N["Documents bucket"]
-        M -- Stores --> O["Chunks table"]
-        M -- Stores --> P["Sections table"]
-        M -- Stores --> Q["Footnotes table"]
-        M -- Stores --> R["Media bucket"]
+        M -- Stores --> N["Documents<br>(document_id, type, description)"]
+        M -- Stores --> O["Content Nodes<br>(sections, paragraphs, tables, images)"]
+        M -- Stores --> P["Embeddings<br>(vector data)"]
+        M -- Stores --> Q["Footnote References"]
+        
+        subgraph "Storage Buckets"
+            S["Document Storage<br>(PDFs, etc)"]
+            T["Content Node Storage<br>(images)"]
+        end
+        
+        N -- storage_url --> S
+        O -- storage_url --> T
     end
 ```
 
@@ -46,75 +52,71 @@ graph TB
 ```mermaid
 erDiagram
     %% Relationship lines
+    PUBLICATION ||--o{ DOCUMENT : has
     DOCUMENT ||--|{ CONTENT_NODE : contains
-    DOCUMENT ||--o{ SUPPLEMENTARY_FILE : has_supplementary
-    SUPPLEMENTARY_FILE ||--|{ CONTENT_NODE : contains
     CONTENT_NODE }|--o{ CONTENT_NODE : is_child_of
     CONTENT_NODE ||--o{ EMBEDDING : has
     CONTENT_NODE ||--o{ FOOTNOTE_REFERENCE : references
     
-    %% ENTITY: DOCUMENT
-    DOCUMENT {
-        string document_id PK
-        string uri "Unique handle.net URI"
-        string title
+    %% Entity: PUBLICATION
+    PUBLICATION {
+        string publication_id PK "Unique publication identifier (pub_XXX)"
+        string title "Title of the publication"
         text abstract "Optional publication abstract"
         string citation "Formal citation"
-        string author
-        date publication_date
-        string source_file_path
+        string authors "Author(s) of the publication (comma separated)"
+        date publication_date "Date of publication"
         string source "Explicit source repository"
-        string source_url "URL to source page"
-        json metadata
-        json file_info "Main download file info"
+        string source_url "Publication landing page URL"
     }
-    
+
+    %% ENTITY: DOCUMENT
+    DOCUMENT {
+        string document_id PK "Unique document identifier (dl_XXX)"
+        string type "Type of document (MAIN, SUPPLEMENTAL, OTHER)"
+        string download_url "URL to the source document download endpoint"
+        string description "Description of the document"
+        string mime_type "MIME type of the document"
+        string charset "Character set of the document"
+        string storage_url "URL to the document storage bucket (s3://...)"
+        bigint file_size "Size of the document in bytes"
+    }
+
     %% ENTITY: CONTENT_NODE
-    %% node_type can be SECTION_HEADING, PARAGRAPH, TABLE, IMAGE, etc.
     CONTENT_NODE {
-        string node_id PK
+        string node_id PK "Unique node identifier (cn_XXX)"
         string document_id FK
         string parent_node_id FK
-        string node_type
-        text content
-        json raw_content
-        int sequence_in_parent
-        int sequence_in_document
-        int start_page_pdf
-        int end_page_pdf
-        string start_page_logical
-        string end_page_logical
-        json bounding_box
-        string supplementary_file_id FK
-    }
-    
-    %% ENTITY: SUPPLEMENTARY_FILE
-    SUPPLEMENTARY_FILE {
-        string file_id PK "Mapped from downloadLinks entry (dl_XXX pattern)"
-        string document_id FK
-        string file_path
-        string url "Download URL from supplementary downloadLink"
-        json file_info "Supplementary file info"
-        string file_type "MIME type from file_info"
-        text description
-        boolean processed
+        string node_type "Type (SECTION_HEADING, PARAGRAPH, TABLE, IMAGE)"
+        text raw_content "Optional original text content of the node"
+        text content "Optional cleaned text content of the node"
+        string storage_url "Optional URL to the node storage bucket (s3://...)"
+        string caption "Optional original caption for the node (image, table, etc.)"
+        string description "Optional VLM description of the node (image, table, etc.)"
+        int sequence_in_parent "Sequence number in the parent node"
+        int sequence_in_document "Sequence number in the document"
+        int start_page_pdf "Start page of the node in the PDF"
+        int end_page_pdf "End page of the node in the PDF"
+        string start_page_logical "Numbered start page of the node"
+        string end_page_logical "Numbered end page of the node"
+        json bounding_box "Bounding box of the node in the document"
     }
     
     %% ENTITY: EMBEDDING
     EMBEDDING {
-        string embedding_id PK
+        string embedding_id PK "Unique embedding identifier (em_XXX)"
         string node_id FK
-        vector embedding_vector
-        string model_name
-        timestamp created_at
+        vector embedding_vector "Embedding vector"
+        string model_name "Name of the embedding model"
+        timestamp created_at "Timestamp of when the embedding was created"
     }
     
     %% ENTITY: FOOTNOTE_REFERENCE
     FOOTNOTE_REFERENCE {
-        string footnote_ref_id PK
+        string footnote_ref_id PK "Unique footnote reference identifier (fr_XXX)"
         string referencing_node_id FK
         string definition_node_id FK
-        string marker_text
-        int sequence_in_node
+        string marker_text "Text that marks the footnote reference (usually a number, letter, or symbol)"
+        int sequence_in_node "Sequence number in the node"
     }
 ```

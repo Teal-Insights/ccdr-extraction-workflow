@@ -1,6 +1,6 @@
 ---
 description: 
-globs: *.py,**/*.py
+globs: **/*.py
 alwaysApply: false
 ---
 There is no Python virtual environment for this repository, but if you insist on witing and running Python scripts, you may do so with `uv`, which is installed systemwide.
