@@ -1,53 +1,4 @@
-# Nature Finance RAG Database and API for working with IMF climate development reports
-
-## Getting Started
-
-1. Clone the repository with `git clone https://github.com/Teal-Insights/nature-finance-rag-api && cd nature-finance-rag-api`
-2. Run `npm install` to install the dependencies
-3. Run `docker compose up` to start the Postgres database
-4. Run `npm run db:migrate` to migrate the database
-5. Run `npm run ingest:pdfs` to ingest the PDFs
-
-## Implementation
-
-The text is chunked by line breaks, with a max chunk length of 2500 characters. This is very naive and should be improved.
-
-## ETL architecture
-
-```mermaid
-graph TB
-    subgraph "Data Collection"
-        C["Cursor Agent<br>(Claude 3.7 Sonnet)"] <-- finds --> B["Data Sources<br>(Web/APIs)"]
-        C -- writes --> D["Extraction Scripts<br>(Node.js)"]
-        D <-- scrapes --> B
-        D --> F["Raw Data"]
-    end
-
-    subgraph "Data Processing"
-        F --> I["Chunking"]
-        I --> J["Annotation"]
-        J --> K["Embedding<br>(Google AI)"]
-        K --> L["Database Upsert<br>(Drizzle ORM)"]
-    end
-
-    subgraph "Database & Storage"
-        L --> M["PostgreSQL with pgvector"]
-        M -- Stores --> N["Documents<br>(document_id, type, description)"]
-        M -- Stores --> O["Content Nodes<br>(sections, paragraphs, tables, images)"]
-        M -- Stores --> P["Embeddings<br>(vector data)"]
-        M -- Stores --> Q["Footnote References"]
-        
-        subgraph "Storage Buckets"
-            S["Document Storage<br>(PDFs, etc)"]
-            T["Content Node Storage<br>(images)"]
-        end
-        
-        N -- storage_url --> S
-        O -- storage_url --> T
-    end
-```
-
-## Database Schema
+# Database Schema
 
 ```mermaid
 erDiagram
@@ -121,3 +72,30 @@ erDiagram
         int sequence_in_node "Sequence number in the node"
     }
 ```
+
+## JSON to Database Schema Mapping
+
+### PUBLICATION Table
+| JSON Path                     | DB Field            | Notes                              
+|-------------------------------|---------------------|------------------------------------|
+| `id`                          | `publication_id`    | Direct mapping                     |
+| `title`                       | `title`             | Direct mapping                     |
+| `abstract`                    | `abstract`          | Direct mapping                     |
+| `citation`                    | `citation`          | Direct mapping                     |
+| `metadata.authors`            | `authors`           | Direct mapping                     |
+| `metadata.date`               | `publication_date`  | Direct mapping                     |
+| `source`                      | `source`            | Direct mapping                     |
+| `source_url`                  | `source_url`        | Direct mapping                     |
+| `uri`                         | `uri`               | Not currently mapped to database   |
+
+### DOCUMENT Table
+| JSON Path                     | DB Field            | Notes                              |
+|-------------------------------|---------------------|------------------------------------|
+| `downloadLinks[*].id`         | `document_id`       | Direct mapping                     |
+| `downloadLinks[*].url`        | `download_url`      | Direct mapping                     |
+| `downloadLinks[*].file_info.mime_type` | `mime_type`| Direct mapping                     |
+| `downloadLinks[*].file_info.charset`   | `charset`  | Direct mapping                     |
+| `downloadLinks[*].type`       | `type`              | Direct mapping                     |
+| `downloadLinks[*].text`       | `description`       | Direct mapping                     |
+| -                             | `storage_url`       | To be populated during processing  |
+| -                             | `file_size`         | To be populated during processing  |

@@ -2,3 +2,4 @@
 .specstory
 node_modules
 discovery/data/pub_*
+artifacts/
