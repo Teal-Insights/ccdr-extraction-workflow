@@ -2,8 +2,8 @@ import os
 import sys
 from pathlib import Path
 import pymupdf
-from google.genai import Client
-from google.genai.types import UploadFileConfig, GenerateContentConfig
+from litellm import completion
+import base64
 from PIL import Image, ImageDraw
 from dotenv import load_dotenv
 import io
@@ -25,36 +25,53 @@ def convert_page_to_image(pdf_path: str, page_num: int, dpi: int = 300) -> Image
 
 def detect_content_regions(image: Image.Image, api_key: str) -> list:
     """Use Gemini to detect contentful regions in the image."""
-    client = Client(api_key=api_key)
+    # Set environment variable for LiteLLM
+    os.environ["GEMINI_API_KEY"] = api_key
 
     prompt = """Analyze this image and identify all charts, diagrams, illustrations, or other contentful images.
     For each image, provide the bounding box coordinates (y1,x1,y2,x2) normalized to 0-1000.
     Do not include decorative elements or non-contentful images."""
 
     try:
-        # Convert PIL Image to bytes for Gemini
+        # Convert PIL Image to base64
         img_byte_arr = io.BytesIO()
         image.save(img_byte_arr, format='PNG')
-        img_byte_arr.seek(0)  # Reset pointer to beginning of stream
-        file = client.files.upload(file=img_byte_arr, config=UploadFileConfig(mime_type="image/png"))
+        img_byte_arr.seek(0)
+        img_base64 = base64.b64encode(img_byte_arr.getvalue()).decode('utf-8')
+
+        # Create message content with text and image
+        messages = [
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": prompt
+                    },
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:image/png;base64,{img_base64}"
+                        }
+                    }
+                ]
+            }
+        ]
 
         # Make API call with error handling
         try:
-            response = client.models.generate_content(
-                model="gemini-2.0-flash-001",
-                contents=[prompt, file],
-                config=GenerateContentConfig(
-                    response_mime_type='application/json',
-                    response_schema=ImageRegions
-                )
+            response = completion(
+                model="gemini/gemini-2.0-flash-001",
+                messages=messages,
+                response_format={"type": "json_object", "response_schema": ImageRegions.model_json_schema()}
             )
 
             # Parse the response
             print("Raw Gemini response:")
-            print(response.text)
+            print(response.choices[0].message.content)
             
             # Parse JSON response into Pydantic model
-            regions_data = ImageRegions.model_validate_json(response.text)
+            regions_data = ImageRegions.model_validate_json(response.choices[0].message.content)
             return regions_data.regions
 
         except Exception as e:
