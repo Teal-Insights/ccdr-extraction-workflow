@@ -10,8 +10,12 @@ import io
 from pydantic import BaseModel
 from typing import List
 
+class BoundingBox(BaseModel):
+    bbox_2d: List[int]
+    label: str
+
 class ImageRegions(BaseModel):
-    regions: List[List[int]]
+    regions: List[BoundingBox]
 
 def convert_page_to_image(pdf_path: str, page_num: int, dpi: int = 300) -> Image.Image:
     """Convert a PDF page to a PIL Image with specified DPI."""
@@ -24,13 +28,20 @@ def convert_page_to_image(pdf_path: str, page_num: int, dpi: int = 300) -> Image
     return img
 
 def detect_content_regions(image: Image.Image, api_key: str) -> list:
-    """Use Gemini to detect contentful regions in the image."""
-    # Set environment variable for LiteLLM
-    os.environ["GEMINI_API_KEY"] = api_key
+    """Use Qwen to detect contentful regions in the image."""
+    # Set environment variable for OpenRouter
+    os.environ["OPENROUTER_API_KEY"] = api_key
 
-    prompt = """Analyze this image and identify all charts, diagrams, illustrations, or other contentful images.
-    For each image, provide the bounding box coordinates (y1,x1,y2,x2) normalized to 0-1000.
-    Do not include decorative elements or non-contentful images."""
+    prompt = f"""Analyze this {image.width}x{image.height} image and identify all charts, diagrams, illustrations, or other contentful images.
+    For each image, provide the bounding box coordinates and label in the following format:
+    {{
+        "regions": [
+            {{"bbox_2d": [x1, y1, x2, y2], "label": "chart"}},
+            {{"bbox_2d": [x1, y1, x2, y2], "label": "diagram"}},
+            ...
+        ]
+    }}
+    Use actual pixel coordinates. Do not include decorative elements or non-contentful images."""
 
     try:
         # Convert PIL Image to base64
@@ -61,21 +72,29 @@ def detect_content_regions(image: Image.Image, api_key: str) -> list:
         # Make API call with error handling
         try:
             response = completion(
-                model="gemini/gemini-2.0-flash-001",
+                model="openrouter/qwen/qwen2.5-vl-72b-instruct",
                 messages=messages,
-                response_format={"type": "json_object", "response_schema": ImageRegions.model_json_schema()}
+                response_format=ImageRegions
             )
 
             # Parse the response
-            print("Raw Gemini response:")
+            print("Raw Qwen response:")
             print(response.choices[0].message.content)
             
+            # Extract JSON content between first and last curly braces
+            content = response.choices[0].message.content
+            start = content.find('{')
+            end = content.rfind('}') + 1
+            if start >= 0 and end > start:
+                content = content[start:end]
+            
             # Parse JSON response into Pydantic model
-            regions_data = ImageRegions.model_validate_json(response.choices[0].message.content)
-            return regions_data.regions
+            regions_data = ImageRegions.model_validate_json(content)
+            # Extract just the bbox coordinates for compatibility with existing code
+            return [region.bbox_2d for region in regions_data.regions]
 
         except Exception as e:
-            print(f"Error during Gemini API call or response parsing: {str(e)}")
+            print(f"Error during Qwen API call or response parsing: {str(e)}")
             if hasattr(e, 'response'):
                 print(f"API Response: {e.response}")
             return []
@@ -83,19 +102,6 @@ def detect_content_regions(image: Image.Image, api_key: str) -> list:
     except Exception as e:
         print(f"Error converting image to bytes: {str(e)}")
         return []
-
-def normalize_coordinates(coords: list, image_width: int, image_height: int) -> list:
-    """Convert normalized coordinates (0-1000) to pixel coordinates."""
-    normalized = []
-    for box in coords:
-        ymin, xmin, ymax, xmax = box
-        normalized.append([
-            int((ymin / 1000.0) * image_height),
-            int((xmin / 1000.0) * image_width),
-            int((ymax / 1000.0) * image_height),
-            int((xmax / 1000.0) * image_width)
-        ])
-    return normalized
 
 def extract_and_save_regions(image: Image.Image, coords: list, output_dir: Path):
     """Extract and save each detected region as a separate image."""
@@ -105,7 +111,7 @@ def extract_and_save_regions(image: Image.Image, coords: list, output_dir: Path)
     viz_image = image.copy()
     draw = ImageDraw.Draw(viz_image)
 
-    for i, (ymin, xmin, ymax, xmax) in enumerate(coords):
+    for i, (xmin, ymin, xmax, ymax) in enumerate(coords):
         # Extract region
         region = image.crop((xmin, ymin, xmax, ymax))
         region.save(output_dir / f"region_{i}.png")
@@ -119,9 +125,9 @@ def extract_and_save_regions(image: Image.Image, coords: list, output_dir: Path)
 def main():
     # Load environment variables
     load_dotenv()
-    api_key = os.getenv("GEMINI_API_KEY")
+    api_key = os.getenv("OPENROUTER_API_KEY")
     if not api_key:
-        print("Error: GEMINI_API_KEY not found in environment variables")
+        print("Error: OPENROUTER_API_KEY not found in environment variables")
         sys.exit(1)
 
     # Set up paths
@@ -135,14 +141,7 @@ def main():
 
     # Detect content regions
     print("Detecting content regions...")
-    normalized_coords = detect_content_regions(page_image, api_key)
-
-    # Convert coordinates to pixel values
-    pixel_coords = normalize_coordinates(
-        normalized_coords, 
-        page_image.width, 
-        page_image.height
-    )
+    pixel_coords = detect_content_regions(page_image, api_key)
 
     # Extract and save regions
     print("Extracting and saving regions...")
