@@ -3,18 +3,12 @@ description:
 globs: **/*.py
 alwaysApply: false
 ---
-There is no Python virtual environment for this repository, but if you insist on witing and running Python scripts, you may do so with `uv`, which is installed systemwide.
+This project uses `uv` to manage dependencies and run Python files.
 
-Create a self-contained file with lazy self-installation of dependencies via the following shebang syntax at the top of the file:
+Add Python dependencies like:
 
-```python
-#!/usr/bin/env -S uv run --script
-# /// script
-# requires-python = ">=3.11"
-# dependencies = [
-#     "playwright",
-# ]
-# ///
+```bash
+uv add pydantic # add --dev flag for development dependencies
 ```
 
 Then run the file with with `uv run`, like:

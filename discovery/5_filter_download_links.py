@@ -1,14 +1,3 @@
-#!/usr/bin/env -S uv run --script
-# /// script
-# requires-python = ">=3.12"
-# dependencies = [
-#     "litellm",
-#     "pydantic",
-#     "tenacity",
-#     "python-dotenv"
-# ]
-# ///
-
 from typing import Optional, Type, Literal, Dict, Any, List
 from pydantic import BaseModel, Field
 from tenacity import retry, stop_after_attempt, wait_exponential
