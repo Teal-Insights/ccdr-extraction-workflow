@@ -19,7 +19,7 @@ import asyncio
 from typing import Optional, Type, Dict, List, Tuple
 from pydantic import BaseModel
 from tenacity import retry, stop_after_attempt, wait_exponential
-import fitz  # PyMuPDF
+import pymupdf
 from litellm import acompletion
 import argparse
 import logging
@@ -87,9 +87,9 @@ async def classify_text(prompt: str, output_format: Type[BaseModel]) -> Optional
 # Main PDF ingestion logic
 ############################################
 async def process_page(
-    doc: fitz.Document,
+    doc: pymupdf.Document,
     page_num: int,
-    page: fitz.Page,
+    page: pymupdf.Page,
     image_dir_path: pathlib.Path,
     image_output_dir_name: str  # The *relative* name for markdown links
 ) -> Tuple[int, str]:
@@ -214,8 +214,8 @@ async def ingest_pdf_to_markdown(pdf_path: str, output_md_path: str, image_outpu
     yaml_frontmatter = ""
 
     try:
-        # Use fitz (PyMuPDF) to open the PDF
-        with fitz.open(pdf_path) as doc:
+        # Use pymupdf (PyMuPDF) to open the PDF
+        with pymupdf.open(pdf_path) as doc:
             logger.info(f"PDF loaded successfully using PyMuPDF. Total pages: {len(doc)}")
 
             # --- Metadata Extraction ---
@@ -270,7 +270,7 @@ async def ingest_pdf_to_markdown(pdf_path: str, output_md_path: str, image_outpu
             # Filter out None values (if any somehow remain) and join
             all_pages_markdown_content = [page for page in page_results if page is not None]
 
-    except fitz.fitz.FileNotFoundError:
+    except pymupdf.pymupdf.FileNotFoundError:
         logger.error(f"PDF file not found at {pdf_path}")
         return ""  # Return empty string if PDF doesn't exist
     except Exception as e:
