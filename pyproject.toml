@@ -7,6 +7,7 @@ requires-python = ">=3.12"
 dependencies = [
     "argparse>=1.4.0",
     "asyncio>=3.4.3",
+    "google-genai>=1.9.0",
     "litellm>=1.65.1",
     "nanoid>=2.0.0",
     "numpy>=2.2.4",
@@ -14,7 +15,7 @@ dependencies = [
     "openai>=1.69.0",
     "pgvector>=0.4.0",
     "playwright>=1.51.0",
-    "protobuf>=6.30.2",
+    "protobuf>=6.0.0.dev0",
     "psycopg2-binary>=2.9.10",
     "pymupdf>=1.25.5",
     "pypdf>=5.4.0",
