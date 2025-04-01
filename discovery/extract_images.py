@@ -2,8 +2,8 @@ import os
 import sys
 from pathlib import Path
 import pymupdf
-from litellm import completion
-import base64
+from google.genai import Client
+from google.genai.types import UploadFileConfig, GenerateContentConfig
 from PIL import Image, ImageDraw
 from dotenv import load_dotenv
 import io
@@ -28,9 +28,8 @@ def convert_page_to_image(pdf_path: str, page_num: int, dpi: int = 300) -> Image
     return img
 
 def detect_content_regions(image: Image.Image, api_key: str) -> list:
-    """Use Qwen to detect contentful regions in the image."""
-    # Set environment variable for OpenRouter
-    os.environ["OPENROUTER_API_KEY"] = api_key
+    """Use Gemini to detect contentful regions in the image."""
+    client = Client(api_key=api_key)
 
     prompt = f"""Analyze this {image.width}x{image.height} image and identify all charts, diagrams, illustrations, or other contentful images.
     For each image, provide the bounding box coordinates and label in the following format:
@@ -44,42 +43,26 @@ def detect_content_regions(image: Image.Image, api_key: str) -> list:
     Use actual pixel coordinates. Do not include decorative elements or non-contentful images."""
 
     try:
-        # Convert PIL Image to base64
+        # Convert PIL Image to bytes for Gemini
         img_byte_arr = io.BytesIO()
         image.save(img_byte_arr, format='PNG')
-        img_byte_arr.seek(0)
-        img_base64 = base64.b64encode(img_byte_arr.getvalue()).decode('utf-8')
-
-        # Create message content with text and image
-        messages = [
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "text",
-                        "text": prompt
-                    },
-                    {
-                        "type": "image_url",
-                        "image_url": {
-                            "url": f"data:image/png;base64,{img_base64}"
-                        }
-                    }
-                ]
-            }
-        ]
+        img_byte_arr.seek(0)  # Reset pointer to beginning of stream
+        file = client.files.upload(file=img_byte_arr, config=UploadFileConfig(mime_type="image/png"))
 
         # Make API call with error handling
         try:
-            response = completion(
-                model="openrouter/qwen/qwen2.5-vl-72b-instruct",
-                messages=messages,
-                response_format=ImageRegions
+            response = client.models.generate_content(
+                model="gemini-2.0-flash-001",
+                contents=[prompt, file],
+                config=GenerateContentConfig(
+                    response_mime_type='application/json',
+                    response_schema=ImageRegions
+                )
             )
 
             # Parse the response
-            print("Raw Qwen response:")
-            print(response.choices[0].message.content)
+            print("Raw Gemini response:")
+            print(response.text)
             
             # Extract JSON content between first and last curly braces
             content = response.choices[0].message.content
@@ -89,9 +72,8 @@ def detect_content_regions(image: Image.Image, api_key: str) -> list:
                 content = content[start:end]
             
             # Parse JSON response into Pydantic model
-            regions_data = ImageRegions.model_validate_json(content)
-            # Extract just the bbox coordinates for compatibility with existing code
-            return [region.bbox_2d for region in regions_data.regions]
+            regions_data = ImageRegions.model_validate_json(response.text)
+            return regions_data.regions
 
         except Exception as e:
             print(f"Error during Qwen API call or response parsing: {str(e)}")
