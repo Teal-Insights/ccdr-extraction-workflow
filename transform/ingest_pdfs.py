@@ -8,10 +8,10 @@ and store them in a PostgreSQL database using SQLModel and pgvector.
 
 Usage:
 1. To process a single file:
-   python discovery/ingest_pdfs.py --file=./data/example.pdf
+   python extract/ingest_pdfs.py --file=./data/example.pdf
 
 2. To process all PDFs in a directory:
-   python discovery/ingest_pdfs.py --dir=./data
+   python extract/ingest_pdfs.py --dir=./data
 
 Prerequisites:
 - PostgreSQL database with the pgvector extension enabled:

@@ -53,7 +53,7 @@ erDiagram
         string end_page_logical "Numbered end page of the node"
         json bounding_box "Bounding box of the node in the document"
     }
-    
+
     %% ENTITY: EMBEDDING
     EMBEDDING {
         string embedding_id PK "Unique embedding identifier (em_XXX)"
@@ -62,7 +62,7 @@ erDiagram
         string model_name "Name of the embedding model"
         timestamp created_at "Timestamp of when the embedding was created"
     }
-    
+
     %% ENTITY: FOOTNOTE_REFERENCE
     FOOTNOTE_REFERENCE {
         string footnote_ref_id PK "Unique footnote reference identifier (fr_XXX)"
@@ -72,6 +72,8 @@ erDiagram
         int sequence_in_node "Sequence number in the node"
     }
 ```
+
+To store PDF and image files, we will use AWS's "S3" storage service, which costs about $0.023 per GB per month, with no flat fee.
 
 ## JSON to Database Schema Mapping
 
@@ -86,7 +88,7 @@ erDiagram
 | `metadata.date`               | `publication_date`  | Direct mapping                     |
 | `source`                      | `source`            | Direct mapping                     |
 | `source_url`                  | `source_url`        | Direct mapping                     |
-| `uri`                         | `uri`               | Not currently mapped to database   |
+| `uri`                         | `uri`               | Direct mapping                     |
 
 ### DOCUMENT Table
 | JSON Path                     | DB Field            | Notes                              |

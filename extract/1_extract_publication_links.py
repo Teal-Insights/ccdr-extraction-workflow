@@ -11,20 +11,20 @@ def verify_existing_results():
     """
     try:
         # Check if the file exists
-        json_path = "discovery/data/publication_links.json"
+        json_path = "extract/data/publication_links.json"
         if not os.path.exists(json_path):
             print("No existing results file found.")
             return False
-            
+
         # Read and parse the JSON file
         with open(json_path, "r", encoding="utf-8") as f:
             results = json.load(f)
-            
+
         # Check number of results
         if len(results) < 61:
             print(f"Insufficient results: found {len(results)}, need at least 61.")
             return False
-            
+
         # Check required fields in each result
         required_fields = ["title", "url", "source", "page_found"]
         for i, result in enumerate(results):
@@ -32,10 +32,10 @@ def verify_existing_results():
                 if field not in result or result[field] is None:
                     print(f"Missing or null {field} in result {i+1}")
                     return False
-                    
+
         print(f"Verification passed: {len(results)} valid results found.")
         return True
-        
+
     except Exception as e:
         print(f"Error during verification: {str(e)}")
         return False
@@ -224,7 +224,7 @@ def extract_all_publication_links(base_url, total_pages=7, max_retries=3):
     print(f"Total unique publications collected: {len(all_links)}")
     
     # Final save with all results
-    with open("discovery/data/publication_links.json", "w", encoding="utf-8") as f:
+    with open("extract/data/publication_links.json", "w", encoding="utf-8") as f:
         json.dump(all_links, f, indent=2, ensure_ascii=False)
     
     return len(all_links) > 0

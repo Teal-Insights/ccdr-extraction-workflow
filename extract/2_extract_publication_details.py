@@ -239,8 +239,8 @@ def scrape_all_publications(input_file, output_file, max_retries=3):
     return len(detailed_publications) > 0
 
 if __name__ == "__main__":
-    input_file = "discovery/data/publication_links.json"
-    output_file = "discovery/data/publication_details.json"
+    input_file = "extract/data/publication_links.json"
+    output_file = "extract/data/publication_details.json"
     
     # First verify if we already have valid results
     if not verify_publication_details(output_file):

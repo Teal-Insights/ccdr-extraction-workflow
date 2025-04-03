@@ -83,13 +83,13 @@ def download_file(url, output_path, file_id, max_retries=4) -> Optional[str]:
 
 def main():
     # Read publication details
-    with open('discovery/data/publication_details.json', 'r') as f:
+    with open('extract/data/publication_details.json', 'r') as f:
         publications = json.load(f)
     
     # Process each publication
     for idx, pub in enumerate(publications):
         pub_id = pub['id']
-        pub_dir = f"discovery/data/{pub_id}"
+        pub_dir = f"extract/data/{pub_id}"
         ensure_directory(pub_dir)
 
         # Download files marked for download

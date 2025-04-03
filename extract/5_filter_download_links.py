@@ -248,7 +248,7 @@ async def main():
         logger.error("DEEPSEEK_API_KEY environment variable not set")
         return
     
-    input_path = "discovery/data/publication_details.json"
+    input_path = "extract/data/publication_details.json"
     await process_publication_details(input_path)
     
     logger.info("Download link classification complete")

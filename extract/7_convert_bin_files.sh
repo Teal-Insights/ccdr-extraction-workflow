@@ -4,8 +4,8 @@
 # Navigate to the project root directory if needed
 # cd /path/to/project/root
 
-# Find all .bin files recursively in discovery/data and rename to .pdf if they are PDFs
-find discovery/data -type f -name "*.bin" | while read file; do
+# Find all .bin files recursively in extract/data and rename to .pdf if they are PDFs
+find extract/data -type f -name "*.bin" | while read file; do
     # Check if it's a PDF
     if file "$file" | grep -q "PDF document"; then
         echo "Renaming PDF: $file"

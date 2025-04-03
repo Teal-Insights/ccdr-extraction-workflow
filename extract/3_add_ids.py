@@ -1,7 +1,7 @@
 import json
 
 # Read the JSON file
-with open('discovery/data/publication_details.json', 'r', encoding='utf-8') as f:
+with open('extract/data/publication_details.json', 'r', encoding='utf-8') as f:
     publications = json.load(f)
 
 # Keep track of how many new IDs we add
@@ -29,7 +29,7 @@ for pub in publications:
                 next_dl_id += 1
 
 # Write the updated JSON back to the file
-with open('discovery/data/publication_details.json', 'w', encoding='utf-8') as f:
+with open('extract/data/publication_details.json', 'w', encoding='utf-8') as f:
     json.dump(publications, f, indent=2, ensure_ascii=False)
 
 print(f"Added {new_pub_ids_added} new publication IDs and {new_dl_ids_added} new download link IDs.")
