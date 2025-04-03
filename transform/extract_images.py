@@ -19,6 +19,9 @@ from asyncio import Semaphore
 import aiofiles
 
 
+# Feature flags
+ENABLE_FIXUP = False  # Set to True to enable the fixup validation step
+
 class BoundingBox(BaseModel):
     label: Literal["chart", "graph", "diagram", "map", "photo"]
     description: str
@@ -51,6 +54,12 @@ class ProcessingStatus(BaseModel):
     last_updated: datetime
     error: Optional[str] = None
     failed_pages: List[int] = []  # Track pages that failed processing
+
+class FixupResult(BaseModel):
+    """Results from the fixup validation of an extracted region"""
+    matches_description: bool
+    is_contentful: Literal["contentful", "decorative"]
+    revised_bbox: Optional[List[int]]
 
 
 def get_pdf_paths(base_dir: str = "extract/data") -> List[str]:
@@ -103,6 +112,7 @@ def load_or_create_status(output_dir: Path) -> ProcessingStatus:
             return ProcessingStatus(**data)
     return None
 
+
 def save_status(status: ProcessingStatus, output_dir: Path):
     """Save current processing status"""
     status_path = output_dir / "processing_status.json"
@@ -112,6 +122,7 @@ def save_status(status: ProcessingStatus, output_dir: Path):
         status_dict['last_updated'] = status_dict['last_updated'].isoformat()
         json.dump(status_dict, f, indent=2)
 
+
 async def save_status_async(status: ProcessingStatus, output_dir: Path):
     """Save current processing status asynchronously"""
     status_path = output_dir / "processing_status.json"
@@ -120,10 +131,12 @@ async def save_status_async(status: ProcessingStatus, output_dir: Path):
     async with aiofiles.open(status_path, "w") as f:
         await f.write(json.dumps(status_dict, indent=2))
 
+
 async def save_document_data_async(document_data: DocumentData, json_path: Path):
     """Save document data asynchronously"""
     async with aiofiles.open(json_path, "w") as f:
         await f.write(json.dumps(document_data.model_dump(), indent=2))
+
 
 async def detect_content_regions_with_retry(
     image: Image.Image,
@@ -212,6 +225,87 @@ async def detect_content_regions_with_retry(
 
     return []
 
+
+async def fixup_crop(
+    image: Image.Image,
+    label: str,
+    description: str,
+    original_bbox: List[int],
+    api_key: str,
+    semaphore: Semaphore,
+    max_retries: int = 3,
+    base_delay: float = 1.0,
+    max_delay: float = 10.0,
+) -> FixupResult:
+    """
+    Validate and potentially fix up an extracted region using Gemini.
+    """
+    os.environ["GEMINI_API_KEY"] = api_key
+
+    # Convert image to base64
+    img_bytes = io.BytesIO()
+    image.save(img_bytes, format="PNG")
+    img_base64 = base64.b64encode(img_bytes.getvalue()).decode("utf-8")
+
+    prompt = f"""
+You are evaluating an extracted figure from a PDF.
+
+1. Does this figure match the description: "{description}"? Return true or false.
+2. Is it contentful (like an illustrative chart, graph, diagram, map, or photo) in the context of an economic report, or purely decorative (like a logo, watermark, or other non-informative image)? Return "contentful" or "decorative".
+3. If needed, revise the bounding box [ymin, xmin, ymax, xmax] (normalized 0–1000) to improve the crop. A common problem is that some of the figure is cut off by an overzealous crop, in which case you should enlarge the bounding box to include the missing parts.
+   Original: {original_bbox}. Return null if no change is needed.
+
+Respond with a JSON object like:
+{{"matches_description": true, "is_contentful": "contentful", "revised_bbox": [100,200,700,800]}}
+"""
+
+    retry_count = 0
+    last_exception = None
+
+    while retry_count < max_retries:
+        try:
+            messages = [{
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": prompt},
+                    {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{img_base64}"}}
+                ]
+            }]
+
+            async with semaphore:
+                loop = asyncio.get_running_loop()
+                response = await loop.run_in_executor(
+                    None,
+                    partial(
+                        completion,
+                        model="gemini/gemini-2.0-flash-001",
+                        messages=messages,
+                        response_format={"type": "json_object", "response_schema": FixupResult.model_json_schema()}
+                    )
+                )
+
+            return FixupResult.model_validate_json(response.choices[0].message.content)
+
+        except RateLimitError as e:
+            last_exception = e
+            retry_count += 1
+            if retry_count < max_retries:
+                delay = min(max_delay, base_delay * (2 ** retry_count) + random.uniform(0, 1))
+                print(f"Rate limit hit in fixup. Retrying in {delay:.2f} seconds... (Attempt {retry_count}/{max_retries})")
+                await asyncio.sleep(delay)
+            else:
+                print(f"Max retries ({max_retries}) exceeded in fixup. Rate limit error: {str(e)}")
+                raise last_exception
+        except Exception as e:
+            print(f"Error during fixup validation: {str(e)}")
+            if hasattr(e, 'response'):
+                print(f"API Response: {e.response}")
+            # Return a default result that accepts the region as-is
+            return FixupResult(matches_description=True, is_contentful="contentful", revised_bbox=None)
+
+    return FixupResult(matches_description=True, is_contentful="contentful", revised_bbox=None)
+
+
 def normalize_coordinates(coords: List[int], image_width: int, image_height: int) -> List[int]:
     """Convert normalized coordinates (0-1000) to pixel coordinates."""
     ymin, xmin, ymax, xmax = coords
@@ -223,7 +317,14 @@ def normalize_coordinates(coords: List[int], image_width: int, image_height: int
     ]
 
 
-async def extract_and_save_regions(image: Image.Image, regions: List[BoundingBox], output_dir: Path, page_num: int) -> PageData:
+async def extract_and_save_regions(
+    image: Image.Image,
+    regions: List[BoundingBox],
+    output_dir: Path,
+    page_num: int,
+    api_key: str,
+    semaphore: Semaphore
+) -> PageData:
     """Extract and save each detected region as a separate image."""
     # Create page-specific directory
     page_dir = output_dir / f"page_{page_num:03d}"
@@ -253,10 +354,43 @@ async def extract_and_save_regions(image: Image.Image, regions: List[BoundingBox
         
         # Extract region
         region_img = image.crop((xmin, ymin, xmax, ymax))
+
+        if ENABLE_FIXUP:
+            # Validate and potentially fix up the region
+            fixup_result = await fixup_crop(
+                region_img,
+                region.label,
+                region.description,
+                region.bbox_2d,
+                api_key,
+                semaphore
+            )
+
+            # Save fixup results
+            fixup_path = page_dir / f"region_{i:03d}_fixup.json"
+            async with aiofiles.open(fixup_path, "w") as f:
+                await f.write(json.dumps(fixup_result.model_dump(), indent=2))
+
+            # Skip if region is not valid or decorative
+            if not fixup_result.matches_description or fixup_result.is_contentful == "decorative":
+                print(f"  Skipping region {i}: {'description mismatch' if not fixup_result.matches_description else 'decorative'}")
+                continue
+
+            # Use revised bbox if provided
+            if fixup_result.revised_bbox:
+                print(f"  Updating bbox for region {i}")
+                pixel_coords = normalize_coordinates(
+                    fixup_result.revised_bbox,
+                    image.width,
+                    image.height
+                )
+                ymin, xmin, ymax, xmax = pixel_coords
+                region_img = image.crop((xmin, ymin, xmax, ymax))
+                region.bbox_2d = fixup_result.revised_bbox
+
+        # Save the region image
         region_filename = f"region_{i:03d}.png"
         region_path = page_dir / region_filename
-        
-        # Save image using async executor
         await loop.run_in_executor(None, region_img.save, region_path)
 
         # Draw rectangle and add label on visualization image
@@ -279,6 +413,7 @@ async def extract_and_save_regions(image: Image.Image, regions: List[BoundingBox
     
     return page_data
 
+
 async def process_page(
     doc: pymupdf.Document,
     page_num: int,
@@ -291,7 +426,7 @@ async def process_page(
         print(f"\nProcessing page {page_num + 1}")
         
         # Convert page to image
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         page_image = await loop.run_in_executor(None, convert_page_to_image, doc, page_num)
         
         # Detect regions with retry logic
@@ -299,13 +434,21 @@ async def process_page(
         print(f"  Found {len(regions)} content regions")
         
         # Extract and save regions
-        page_data = await extract_and_save_regions(page_image, regions, output_dir, page_num)
+        page_data = await extract_and_save_regions(
+            page_image,
+            regions,
+            output_dir,
+            page_num,
+            api_key,
+            semaphore
+        )
         print(f"  Saved to {output_dir}/page_{page_num:03d}/")
         
         return page_data
     except Exception as e:
         print(f"Error processing page {page_num + 1}: {str(e)}")
         return None
+
 
 async def process_document(pdf_path: str, api_key: str, max_concurrent: int = 3) -> DocumentData:
     """Process a single document with concurrent page processing"""
@@ -327,11 +470,14 @@ async def process_document(pdf_path: str, api_key: str, max_concurrent: int = 3)
         document_data = DocumentData(dl_id=dl_id, pages=[])
 
     # Open the PDF document
-    doc = pymupdf.open(pdf_path)
+    doc: pymupdf.Document = pymupdf.open(pdf_path)
     try:
         num_pages = doc.page_count
         start_page = 0 if not status else status.last_processed_page + 1
 
+        if start_page >= num_pages:
+            print(f"No pages to process for {pdf_path}")
+            return document_data
         if start_page > 0:
             print(f"Resuming processing from page {start_page + 1}")
 
@@ -352,21 +498,21 @@ async def process_document(pdf_path: str, api_key: str, max_concurrent: int = 3)
         while current_page < num_pages:
             batch_size = min(max_concurrent, num_pages - current_page)
             batch_pages = range(current_page, current_page + batch_size)
-            
+
             # Skip already processed pages
             tasks = [
                 process_page(doc, page_num, api_key, output_dir, semaphore)
                 for page_num in batch_pages
                 if not any(p.page_number == page_num for p in document_data.pages)
             ]
-            
+
             if not tasks:
                 current_page += batch_size
                 continue
-                
+
             # Wait for all pages in batch to complete
             results = await asyncio.gather(*tasks, return_exceptions=True)
-            
+
             # Process results and update status
             for page_num, result in zip(batch_pages, results):
                 if isinstance(result, Exception):
@@ -375,7 +521,7 @@ async def process_document(pdf_path: str, api_key: str, max_concurrent: int = 3)
                 elif result is not None:
                     document_data.pages.append(result)
                     status.last_processed_page = page_num
-            
+
             # Update status and save progress
             status.last_updated = datetime.now()
             await save_status_async(status, output_dir)
@@ -392,6 +538,7 @@ async def process_document(pdf_path: str, api_key: str, max_concurrent: int = 3)
 
     finally:
         doc.close()
+
 
 async def main_async():
     # Load environment variables
@@ -412,6 +559,7 @@ async def main_async():
 
 def main():
     asyncio.run(main_async())
+
 
 if __name__ == "__main__":
     main()
