@@ -18,7 +18,7 @@ class DocumentType(str, Enum):
     OTHER = "OTHER"
 
 class NodeType(str, Enum):
-    SECTION_HEADING = "SECTION_HEADING"
+    HEADING = "HEADING"
     PARAGRAPH = "PARAGRAPH"
     TABLE = "TABLE"
     IMAGE = "IMAGE"
@@ -215,7 +215,7 @@ def test_content_node(document: Document):
     parent_node = ContentNode(
         node_id="cn_001",
         document_id=document.document_id,
-        node_type=NodeType.SECTION_HEADING,
+        node_type=NodeType.HEADING,
         content="Introduction",
         sequence_in_parent=1,
         sequence_in_document=1,

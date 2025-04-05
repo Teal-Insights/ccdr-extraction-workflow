@@ -3,6 +3,7 @@
 node_modules
 extract/data/
 transform/images/
+transform/text/
 artifacts/
 __pycache__
 *.pyc

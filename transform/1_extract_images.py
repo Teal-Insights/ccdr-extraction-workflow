@@ -23,7 +23,7 @@ import aiofiles
 ENABLE_FIXUP = False  # Set to True to enable the fixup validation step
 
 class BoundingBox(BaseModel):
-    label: Literal["chart", "graph", "diagram", "map", "photo"]
+    label: Literal["chart", "graph", "diagram", "map", "photo", "table", "text_box"]
     description: str
     bbox_2d: List[int]
 
@@ -150,9 +150,11 @@ async def detect_content_regions_with_retry(
     # Set environment variable for LiteLLM
     os.environ["GEMINI_API_KEY"] = api_key
 
-    prompt = """Analyze this page and provide bounding box coordinates (y1,x1,y2,x2) normalized to 0-1000 for any figures, such as photographs, maps, charts, graphs, or diagrams.
-    For each, include a label ("chart", "graph", "diagram", "map", or "photo") and a context-aware description of the figure and what it shows/communicates.
-    DO NOT include text elements such as lists, tables, or text boxes."""
+    prompt = """Analyze this page, identify figures, and provide bounding box coordinates (y1,x1,y2,x2) for each figure normalized to 0-1000.
+
+    For each figure, include:
+    1. A label from: "chart", "graph", "diagram", "map", "photo", "table", or "text_box"
+    2. A context-aware description of what the figure shows/communicates"""
 
     retry_count = 0
     last_exception = None

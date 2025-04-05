@@ -39,7 +39,7 @@ erDiagram
         string node_id PK "Unique node identifier (cn_XXX)"
         string document_id FK
         string parent_node_id FK
-        string node_type "Type (SECTION_HEADING, PARAGRAPH, TABLE, IMAGE)"
+        string node_type "Type (HEADING, PARAGRAPH, TABLE, IMAGE)"
         text raw_content "Optional original text content of the node"
         text content "Optional cleaned text content of the node"
         string storage_url "Optional URL to the node storage bucket (s3://...)"
