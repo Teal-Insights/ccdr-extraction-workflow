@@ -1,5 +1,5 @@
 import json
-from datetime import datetime
+from datetime import datetime, date
 from pathlib import Path
 from typing import List, Dict, Any, Tuple
 
@@ -17,7 +17,7 @@ def load_publication_data(json_path: str) -> List[Dict[str, Any]]:
     with open(json_path, 'r') as f:
         return json.load(f)
 
-def parse_date(date_str: str) -> datetime.date:
+def parse_date(date_str: str) -> date:
     """Parse date string in various formats to datetime.date object."""
     formats = [
         "%Y-%m-%d",  # 2025-01-15

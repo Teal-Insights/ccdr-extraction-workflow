@@ -7,7 +7,8 @@ from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 from litellm import acompletion
 from tenacity import retry, stop_after_attempt, wait_exponential
-
+from litellm import CustomStreamWrapper
+from litellm.files.main import ModelResponse
 
 logger = logging.getLogger(__name__)
 load_dotenv(override=True)
@@ -83,14 +84,17 @@ Text content:
 ```
 """
         logger.debug("Sending request to LLM")
-        response = await acompletion(
+        response: ModelResponse | CustomStreamWrapper = await acompletion(
             model="gemini/gemini-2.0-flash-001", 
             messages=[{"role": "user", "content": prompt}],
             response_format={"type": "json_object", "response_schema": Sections.model_json_schema()},
             api_key=os.getenv('GEMINI_API_KEY')
         )
         logger.debug("Received response from LLM")
-        content = response['choices'][0]['message']['content']
+        if isinstance(response, CustomStreamWrapper):
+            raise ValueError("Streaming response not supported")
+        else:
+            content = response['choices'][0]['message']['content']
         result = {text_document.doc_id: Sections.model_validate_json(content)}
         return result
     except Exception as e:
