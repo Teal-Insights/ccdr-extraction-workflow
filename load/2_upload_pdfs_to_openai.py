@@ -1,3 +1,5 @@
+# Ultimately, we will use our custom pgvector store, but for now we use OpenAI's vector store infrastructure
+
 import asyncio
 import os
 import logging

@@ -5,7 +5,7 @@ from typing import List, Dict, Any, Tuple
 
 from sqlmodel import Session, select
 
-from db_setup import (
+from schema import (
     Publication,
     Document,
     engine,

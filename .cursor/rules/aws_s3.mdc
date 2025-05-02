@@ -1,0 +1,132 @@
+---
+description: Managing AWS S3 buckets with the aws cli tool
+globs: 
+alwaysApply: false
+---
+## AWS CLI Setup Instructions
+
+Before proceeding with S3 bucket setup, a human user must complete the following steps in a web browser:
+
+1. Create an AWS Account if your organization does not already have one:
+   - Go to [AWS Console](https://aws.amazon.com/)
+   - Click "Create an AWS Account"
+   - Follow the signup process (requires email, credit card)
+   - Choose the "Basic Support - Free" tier
+
+2. Set up AWS IAM Identity Center and create your organization if it does not already exist:
+   - In AWS Console, search for "IAM Identity Center"
+   - Click "Enable" if not already enabled
+   - Choose "Create organization" if prompted
+   - Set up your identity source (can use built-in AWS directory to start)
+   - Bookmark the SSO start URL (will look like `https://d-xxxxxxxxxx.awsapps.com/start`); this is your AWS access portal link
+
+3. Install and configure the AWS CLI on your local machine:
+   - Follow the official AWS CLI installation instructions for your operating system at:
+     https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html
+   - Verify installation:
+     ```bash
+     aws --version
+     ```
+   - Run the following command to configure the AWS CLI with your SSO credentials:
+     ```bash
+     aws configure sso
+     ```
+   - When prompted, enter:
+     - SSO start URL: `https://d-xxxxxxxxxx.awsapps.com/start` (from step 2)
+     - SSO Region: `us-east-1`
+     - Default CLI profile name: (press Enter for default, or choose a name)
+   - The command will open your browser for authentication. Log in through your organization's portal.
+   - Note the profile name from the configuration output (e.g., `AdministratorAccess-xxxxxxxxxxxx`)
+
+4. Set the default profile to avoid having to specify `--profile` with every command:
+   - Add the AWS_PROFILE environment variable to your `.bashrc`:
+     ```bash
+     echo 'export AWS_PROFILE=AdministratorAccess-xxxxxxxxxxxx' >> ~/.bashrc
+     ```
+   - Reload your `.bashrc`:
+     ```bash
+     source ~/.bashrc
+     ```
+
+Note: Your SSO credentials will expire and you will need to re-authenticate by running `aws configure sso` again after a few hours. You will not need to enter your SSO start URL, region, or profile name again.
+
+## S3 Bucket Management
+
+### Common Bucket Management Commands
+
+```bash
+# List buckets
+aws s3 ls
+
+# List contents of a specific bucket
+aws s3 ls s3://bucket-name
+
+# Copy file to S3
+aws s3 cp local_file.pdf s3://bucket-name/
+
+# Copy file from S3
+aws s3 cp s3://bucket-name/file.pdf ./
+
+# Sync directory to S3
+aws s3 sync local_dir s3://bucket-name/remote_dir
+
+# Remove file from S3
+aws s3 rm s3://bucket-name/file.pdf
+
+# Create new bucket
+aws s3 mb s3://bucket-name
+
+# Remove bucket and all contents
+aws s3 rb s3://bucket-name --force
+```
+
+## Setting Up Credentials for Access with Python `boto3` or Other Production Software Systems
+
+1. Create an IAM user for your application with either user- or group-level S3 bucket read permissions, e.g.:
+```json
+{
+    "Effect": "Allow",
+    "Action": [
+        "s3:Get*",
+        "s3:List*",
+        "s3:Describe*",
+        "s3-object-lambda:Get*",
+        "s3-object-lambda:List*"
+    ],
+    "Resource": "*"
+}
+```
+2. Create a bucket policy to allow read permissions, e.g.:
+```json
+{
+    "Version":"2012-10-17",
+    "Statement":[
+        {
+        "Sid":"AllowSomeUserGroupRead",
+        "Effect":"Allow",
+        "Principal":{
+            "AWS":"arn:aws:iam::<ACCOUNT_NUMBER>:user/<IAM_USER>"
+        },
+        "Action":[
+            "s3:ListBucket",
+            "s3:GetObject"
+        ],
+        "Resource":[
+            "arn:aws:s3:::<BUCKET_NAME>",
+            "arn:aws:s3:::<BUCKET_NAME>/*"
+        ]
+        }
+    ]
+}
+2. 
+```bash
+aws s3api put-bucket-policy --bucket bucket-name --policy file://bucket-policy.json
+```
+
+## Troubleshooting
+
+If you get authentication errors:
+
+1. Ensure your SSO session hasn't expired (run `aws configure sso` again if needed)
+2. Verify your AWS_PROFILE is set correctly: `echo $AWS_PROFILE`
+3. Check available profiles: `aws configure list-profiles`
