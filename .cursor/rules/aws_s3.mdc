@@ -8,7 +8,7 @@ alwaysApply: false
 Before proceeding with S3 bucket setup, a human user must complete the following steps in a web browser:
 
 1. Create an AWS Account if your organization does not already have one:
-   - Go to [AWS Console](https://aws.amazon.com/)
+   - Go to [AWS Console](mdc:https:/aws.amazon.com)
    - Click "Create an AWS Account"
    - Follow the signup process (requires email, credit card)
    - Choose the "Basic Support - Free" tier
@@ -48,7 +48,7 @@ Before proceeding with S3 bucket setup, a human user must complete the following
      source ~/.bashrc
      ```
 
-Note: Your SSO credentials will expire and you will need to re-authenticate by running `aws configure sso` again after a few hours. You will not need to enter your SSO start URL, region, or profile name again.
+Note: Your SSO credentials will expire after a few hours and you will need to re-authenticate by running `aws sso login`. You will not need to enter your SSO start URL, region, or profile name again.
 
 ## S3 Bucket Management
 
@@ -78,49 +78,6 @@ aws s3 mb s3://bucket-name
 
 # Remove bucket and all contents
 aws s3 rb s3://bucket-name --force
-```
-
-## Setting Up Credentials for Access with Python `boto3` or Other Production Software Systems
-
-1. Create an IAM user for your application with either user- or group-level S3 bucket read permissions, e.g.:
-```json
-{
-    "Effect": "Allow",
-    "Action": [
-        "s3:Get*",
-        "s3:List*",
-        "s3:Describe*",
-        "s3-object-lambda:Get*",
-        "s3-object-lambda:List*"
-    ],
-    "Resource": "*"
-}
-```
-2. Create a bucket policy to allow read permissions, e.g.:
-```json
-{
-    "Version":"2012-10-17",
-    "Statement":[
-        {
-        "Sid":"AllowSomeUserGroupRead",
-        "Effect":"Allow",
-        "Principal":{
-            "AWS":"arn:aws:iam::<ACCOUNT_NUMBER>:user/<IAM_USER>"
-        },
-        "Action":[
-            "s3:ListBucket",
-            "s3:GetObject"
-        ],
-        "Resource":[
-            "arn:aws:s3:::<BUCKET_NAME>",
-            "arn:aws:s3:::<BUCKET_NAME>/*"
-        ]
-        }
-    ]
-}
-2. 
-```bash
-aws s3api put-bucket-policy --bucket bucket-name --policy file://bucket-policy.json
 ```
 
 ## Troubleshooting
