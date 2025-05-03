@@ -6,7 +6,6 @@ from dotenv import load_dotenv
 from sqlmodel import Field, Relationship, SQLModel, create_engine, Column
 from pydantic import HttpUrl
 from sqlalchemy.dialects.postgresql import ARRAY, FLOAT, JSONB, VARCHAR
-import numpy as np
 
 # Load environment variables
 load_dotenv()
@@ -75,6 +74,7 @@ class Document(SQLModel, table=True):
 
 
 class ContentNode(SQLModel, table=True):
+    __tablename__ = "content_node" # type: ignore
     __table_args__ = {'comment': 'Contains hierarchical document content with relationships to embeddings and footnotes'}
     
     node_id: str = Field(primary_key=True, max_length=50, index=True)
@@ -128,14 +128,15 @@ class Embedding(SQLModel, table=True):
 
 
 class FootnoteReference(SQLModel, table=True):
+    __tablename__ = "footnote_reference" # type: ignore
     __table_args__ = {'comment': 'Contains bidirectional footnote references between content nodes'}
-    
+
     footnote_ref_id: str = Field(primary_key=True, max_length=50, index=True)
     referencing_node_id: str = Field(foreign_key="content_node.node_id", index=True)
     definition_node_id: str = Field(foreign_key="content_node.node_id", index=True)
     marker_text: str = Field(max_length=50)
     sequence_in_node: int
-    
+
     # Relationships
     referencing_node: ContentNode = Relationship(
         back_populates="referencing_footnotes",
