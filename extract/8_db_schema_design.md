@@ -11,7 +11,7 @@ erDiagram
     
     %% Entity: PUBLICATION
     PUBLICATION {
-        string publication_id PK "Unique publication identifier (pub_XXX)"
+        string id PK "Unique publication identifier (pub_XXX)"
         string title "Title of the publication"
         text abstract "Optional publication abstract"
         string citation "Formal citation"
@@ -24,7 +24,7 @@ erDiagram
 
     %% ENTITY: DOCUMENT
     DOCUMENT {
-        string document_id PK "Unique document identifier (dl_XXX)"
+        string id PK "Unique document identifier (dl_XXX)"
         string type "Type of document (MAIN, SUPPLEMENTAL, OTHER)"
         string download_url "URL to the source document download endpoint"
         string description "Description of the document"
@@ -36,7 +36,7 @@ erDiagram
 
     %% ENTITY: CONTENT_NODE
     CONTENT_NODE {
-        string node_id PK "Unique node identifier (cn_XXX)"
+        string id PK "Unique node identifier (cn_XXX)"
         string document_id FK
         string parent_node_id FK
         string node_type "Type (HEADING, PARAGRAPH, TABLE, IMAGE)"
@@ -56,7 +56,7 @@ erDiagram
 
     %% ENTITY: EMBEDDING
     EMBEDDING {
-        string embedding_id PK "Unique embedding identifier (em_XXX)"
+        string id PK "Unique embedding identifier (em_XXX)"
         string node_id FK
         vector embedding_vector "Embedding vector"
         string model_name "Name of the embedding model"
@@ -65,7 +65,7 @@ erDiagram
 
     %% ENTITY: FOOTNOTE_REFERENCE
     FOOTNOTE_REFERENCE {
-        string footnote_ref_id PK "Unique footnote reference identifier (fr_XXX)"
+        string id PK "Unique footnote reference identifier (fr_XXX)"
         string referencing_node_id FK
         string definition_node_id FK
         string marker_text "Text that marks the footnote reference (usually a number, letter, or symbol)"
@@ -80,7 +80,7 @@ To store PDF and image files, we will use AWS's "S3" storage service, which cost
 ### PUBLICATION Table
 | JSON Path                     | DB Field            | Notes                              
 |-------------------------------|---------------------|------------------------------------|
-| `id`                          | `publication_id`    | Direct mapping                     |
+| `id`                          | `id`    | Direct mapping                     |
 | `title`                       | `title`             | Direct mapping                     |
 | `abstract`                    | `abstract`          | Direct mapping                     |
 | `citation`                    | `citation`          | Direct mapping                     |
@@ -93,7 +93,7 @@ To store PDF and image files, we will use AWS's "S3" storage service, which cost
 ### DOCUMENT Table
 | JSON Path                     | DB Field            | Notes                              |
 |-------------------------------|---------------------|------------------------------------|
-| `downloadLinks[*].id`         | `document_id`       | Direct mapping                     |
+| `downloadLinks[*].id`         | `id`       | Direct mapping                     |
 | `downloadLinks[*].url`        | `download_url`      | Direct mapping                     |
 | `downloadLinks[*].file_info.mime_type` | `mime_type`| Direct mapping                     |
 | `downloadLinks[*].file_info.charset`   | `charset`  | Direct mapping                     |

@@ -5,17 +5,19 @@ from typing import List, Dict, Any, Tuple
 
 from sqlmodel import Session, select
 
-from schema import (
+from load.schema import (
     Publication,
     Document,
-    engine,
     DocumentType
 )
+from load.db import engine
+
 
 def load_publication_data(json_path: str) -> List[Dict[str, Any]]:
     """Load publication data from JSON file."""
     with open(json_path, 'r') as f:
         return json.load(f)
+
 
 def parse_date(date_str: str) -> date:
     """Parse date string in various formats to datetime.date object."""
@@ -42,7 +44,7 @@ def parse_date(date_str: str) -> date:
 def create_publication(pub_data: Dict[str, Any]) -> Publication:
     """Create a Publication object from JSON data."""
     return Publication(
-        publication_id=pub_data["id"],
+        id=pub_data["id"],
         title=pub_data["title"],
         abstract=pub_data.get("abstract"),  # Using get() for optional fields
         citation=pub_data["citation"],
@@ -58,7 +60,7 @@ def create_documents(pub_data: Dict[str, Any], publication_id: str) -> List[Docu
     documents = []
     for dl in pub_data["downloadLinks"]:
         doc = Document(
-            document_id=dl["id"],
+            id=dl["id"],
             publication_id=publication_id,
             type=DocumentType(dl["type"].upper()),
             download_url=dl["url"],
@@ -73,13 +75,13 @@ def create_documents(pub_data: Dict[str, Any], publication_id: str) -> List[Docu
 
 def publication_exists(session: Session, publication_id: str) -> bool:
     """Check if a publication already exists in the database."""
-    statement = select(Publication).where(Publication.publication_id == publication_id)
+    statement = select(Publication).where(Publication.id == publication_id)
     return session.exec(statement).first() is not None
 
 def verify_publication_upload(session: Session, pub_data: Dict[str, Any]) -> Tuple[bool, str]:
     """Verify that a publication was uploaded correctly."""
     pub_id = pub_data["id"]
-    statement = select(Publication).where(Publication.publication_id == pub_id)
+    statement = select(Publication).where(Publication.id == pub_id)
     db_pub = session.exec(statement).first()
     
     if not db_pub:
@@ -102,7 +104,7 @@ def verify_documents_upload(session: Session, pub_data: Dict[str, Any]) -> Tuple
     db_docs = session.exec(statement).all()
     
     source_doc_ids = {dl["id"] for dl in pub_data["downloadLinks"]}
-    db_doc_ids = {doc.document_id for doc in db_docs}
+    db_doc_ids = {doc.id for doc in db_docs}
     
     if source_doc_ids != db_doc_ids:
         missing = source_doc_ids - db_doc_ids
@@ -138,7 +140,7 @@ def upload_data(json_path: str, skip_existing: bool = True) -> Dict[str, int]:
                 session.add(publication)
                 
                 # Create and add documents
-                documents = create_documents(pub_data, publication.publication_id)
+                documents = create_documents(pub_data, publication.id)
                 for doc in documents:
                     session.add(doc)
                 
@@ -150,7 +152,7 @@ def upload_data(json_path: str, skip_existing: bool = True) -> Dict[str, int]:
                 docs_verified, docs_msg = verify_documents_upload(session, pub_data)
                 
                 if pub_verified and docs_verified:
-                    print(f"✓ Successfully uploaded and verified publication {publication.publication_id} with {len(documents)} documents")
+                    print(f"✓ Successfully uploaded and verified publication {publication.id} with {len(documents)} documents")
                     stats["success"] += 1
                 else:
                     print(f"⚠ Upload validation failed for {pub_id}:")

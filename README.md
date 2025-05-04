@@ -60,7 +60,7 @@ erDiagram
     
     %% Entity: PUBLICATION
     PUBLICATION {
-        string publication_id PK "Unique publication identifier (pub_XXX)"
+        string id PK "Unique publication identifier (pub_XXX)"
         string title "Title of the publication"
         text abstract "Optional publication abstract"
         string citation "Formal citation"
@@ -73,7 +73,7 @@ erDiagram
 
     %% ENTITY: DOCUMENT
     DOCUMENT {
-        string document_id PK "Unique document identifier (dl_XXX)"
+        string id PK "Unique document identifier (dl_XXX)"
         string type "Type of document (MAIN, SUPPLEMENTAL, OTHER)"
         string download_url "URL to the source document download endpoint"
         string description "Description of the document"
@@ -85,7 +85,7 @@ erDiagram
 
     %% ENTITY: CONTENT_NODE
     CONTENT_NODE {
-        string node_id PK "Unique node identifier (cn_XXX)"
+        string id PK "Unique node identifier (cn_XXX)"
         string document_id FK
         string parent_node_id FK
         string node_type "Type (HEADING, PARAGRAPH, TABLE, IMAGE)"
@@ -105,7 +105,7 @@ erDiagram
     
     %% ENTITY: EMBEDDING
     EMBEDDING {
-        string embedding_id PK "Unique embedding identifier (em_XXX)"
+        string id PK "Unique embedding identifier (em_XXX)"
         string node_id FK
         vector embedding_vector "Embedding vector"
         string model_name "Name of the embedding model"
@@ -114,7 +114,7 @@ erDiagram
     
     %% ENTITY: FOOTNOTE_REFERENCE
     FOOTNOTE_REFERENCE {
-        string footnote_ref_id PK "Unique footnote reference identifier (fr_XXX)"
+        string id PK "Unique footnote reference identifier (fr_XXX)"
         string referencing_node_id FK
         string definition_node_id FK
         string marker_text "Text that marks the footnote reference (usually a number, letter, or symbol)"

@@ -28,7 +28,7 @@ def download_file(url, output_path, file_id, max_retries=4) -> Optional[str]:
             for file in os.listdir(output_path):
                 if file.startswith(file_id):
                     print(f"File {file} already exists, skipping download")
-                    return
+                    return None
             
             # Make the request with streaming enabled
             response = session.get(url, allow_redirects=True, stream=True)
@@ -80,6 +80,7 @@ def download_file(url, output_path, file_id, max_retries=4) -> Optional[str]:
             wait_time = random.uniform(base_wait, base_wait * 1.5)
             print(f"Error encountered. Waiting {wait_time:.1f} seconds before retry (attempt {attempt}/{max_retries})...")
             time.sleep(wait_time)
+    return None
 
 def main():
     # Read publication details

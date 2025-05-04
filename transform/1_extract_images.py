@@ -3,7 +3,8 @@ import sys
 from pathlib import Path
 from typing import Literal, Optional
 import pymupdf
-from litellm import completion, RateLimitError
+from litellm import completion
+from litellm.exceptions import RateLimitError
 import base64
 from PIL import Image, ImageDraw
 from dotenv import load_dotenv
