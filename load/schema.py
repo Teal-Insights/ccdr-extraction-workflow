@@ -82,7 +82,15 @@ class Document(SQLModel, table=True):
         # Validate the URL format but return as string
         HttpUrl(v)
         return v
-    
+
+    @field_validator('storage_url')
+    @classmethod
+    def validate_optional_url(cls, v: Optional[str]) -> Optional[str]:
+        # Validate the URL format but return as string
+        if v is not None:
+            HttpUrl(v)
+        return v
+
     # Relationships
     publication: Publication = Relationship(back_populates="documents")
     content_nodes: List["ContentNode"] = Relationship(back_populates="document")
@@ -108,7 +116,16 @@ class ContentNode(SQLModel, table=True):
     start_page_logical: str
     end_page_logical: str
     bounding_box: Dict[str, Any] = Field(sa_column=Column(JSONB))
-    
+
+    # Validator for optional URL
+    @field_validator('storage_url')
+    @classmethod
+    def validate_optional_url(cls, v: Optional[str]) -> Optional[str]:
+        # Validate the URL format but return as string
+        if v is not None:
+            HttpUrl(v)
+        return v
+
     # Relationships
     document: Document = Relationship(back_populates="content_nodes")
     parent: Optional["ContentNode"] = Relationship(
