@@ -9,6 +9,16 @@
     - Modules are meant to be run in this order: extract -> transform -> load
     - Scripts are numbered to indicate the order they should be run in
 
+## Synchronization with the client
+
+This repository is the data ingestion pipeline for the [Nature Finance RAG Client](https://github.com/Teal-Insights/nature-finance-rag-client).
+
+It's important to keep the database schema in sync with the client. You can run a comparison from the root of this repo with:
+
+```bash
+diff absolute/path/to/client/models.py load/schema.py
+```
+
 ## RAG Implementation
 
 The text is chunked by line breaks, with a max chunk length of 2500 characters. This is very naive and should be improved.
