@@ -1,3 +1,18 @@
+"""
+1. Converts all PDF pages to images.
+2. Detects and extracts regions of interest (ROIs) from the images.
+3. Validates and refines the extracted regions (optional, currently disabled).
+4. Saves the extracted regions as individual images and metadata (bounding boxes, labels, descriptions) in a structured JSON format.
+
+Output:
+- A directory for each processed document containing:
+  - Extracted image regions (PNG files).
+  - `visualization.png` of the original page with detected regions shown as a bounding box.
+  - Metadata (JSON) describing the regions and their properties.
+- A summary JSON file (`document_regions.json`) for each document, listing all extracted regions.
+- A processing status file (`processing_status.json`) to track progress and handle failures.
+"""
+
 import os
 import sys
 from pathlib import Path
@@ -195,7 +210,7 @@ async def detect_content_regions_with_retry(
                     None,
                     partial(
                         completion,
-                        model="gemini/gemini-2.0-flash-001",
+                        model="gemini/gemini-2.5-flash-preview-05-20",
                         messages=messages,
                         response_format={"type": "json_object", "response_schema": ImageRegions.model_json_schema()}
                     )
@@ -281,7 +296,7 @@ Respond with a JSON object like:
                     None,
                     partial(
                         completion,
-                        model="gemini/gemini-2.0-flash-001",
+                        model="gemini/gemini-2.5-flash-preview-05-20",
                         messages=messages,
                         response_format={"type": "json_object", "response_schema": FixupResult.model_json_schema()}
                     )

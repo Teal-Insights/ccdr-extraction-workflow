@@ -185,3 +185,19 @@ if __name__ == "__main__":
     print(f"Failed to upload: {stats['failed']}")
     print(f"Failed validation: {stats['validation_failed']}")
     print("\nData upload complete!")
+
+    print("Sample record:")
+    # Create a session
+    with Session(engine) as session:
+        # Query for a Document (take the first one available)
+        statement = select(Document).limit(1)
+        result = session.exec(statement).first()
+        
+        if result:
+            print(result.model_dump_json())
+            
+            # Get and print the related Publication
+            pub = result.publication
+            print(pub.model_dump_json())
+        else:
+            print("Something went wrong; no documents found in the database.")

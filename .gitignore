@@ -14,3 +14,5 @@ __pycache__
 *.pyz
 *.pywz
 *.pyzw
+.mypy_cache/
+.venv/

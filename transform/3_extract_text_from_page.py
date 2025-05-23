@@ -1,8 +1,15 @@
 #!/usr/bin/env python3
 
 """
-Script to extract raw text from all PDFs in extract/data subdirectories.
-Outputs the extracted text in a structured JSON format.
+1. Recursively processes all PDF files in `extract/data/pub_*` directories.
+2. Extracts all text from each page of every PDF.
+3. Saves the results to `transform/text/text_content.json`.
+
+Output:
+- A JSON file (`text_content.json`) with the following structure:
+  - `publications`: List of publications (each identified by `pub_id`).
+    - `documents`: List of documents (each identified by `doc_id`).
+      - `pages`: List of pages (1-based numbering) with extracted text content.
 """
 
 import json

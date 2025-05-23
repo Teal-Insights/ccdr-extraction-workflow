@@ -43,18 +43,19 @@ graph TB
 
     subgraph "Database & Storage"
         L --> M["PostgreSQL with pgvector"]
-        M -- Stores --> N["Documents<br>(document_id, type, description)"]
-        M -- Stores --> O["Content Nodes<br>(sections, paragraphs, tables, images)"]
-        M -- Stores --> P["Embeddings<br>(vector data)"]
-        M -- Stores --> Q["Footnote References"]
+        M -- Stores --> N["Publications<br>(citation information)"]
+        M -- Stores --> O["Documents<br>(PDF file information)"]
+        M -- Stores --> P["Content Nodes<br>(sections, paragraphs, tables, images)"]
+        M -- Stores --> Q["Embeddings<br>(vectorized data)"]
+        M -- Stores --> R["References<br>(for associating content nodes with notes)"]
         
-        subgraph "Storage Buckets"
-            S["Document Storage<br>(PDFs, etc)"]
+        subgraph "S3 Storage Buckets"
+            S["Document Storage<br>(PDFs)"]
             T["Content Node Storage<br>(images)"]
         end
         
-        N -- storage_url --> S
-        O -- storage_url --> T
+        O -- storage_url --> S
+        P -- storage_url --> T
     end
 ```
 

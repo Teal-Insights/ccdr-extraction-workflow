@@ -5,4 +5,4 @@ alwaysApply: false
 ---
 For deep Internet research and question-answering, you may find it helpful to send queries to a Perplexity research agent using your `perplexity` tool.
 
-To find and scrape data from the Internet, you will probably want to use your web search tool with `wget`, your `playwright` tool, or scripted requests to an official API.
+To find and scrape data from the Internet, you will probably want to use your web search tool with `wget`, ask the user to enable the `playwright` tool, or make scripted requests to an official API.
