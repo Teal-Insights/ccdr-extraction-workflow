@@ -5,11 +5,147 @@ alwaysApply: true
 ---
 This repository contains workflows and scripts for:
 
-1. Scraping data or documents from the Internet
-2. Transforming the scraped examples into structured JSON data
-3. Embedding the data for semantic search
+1. Scraping the World Bank Country and Climate Development Reports (CCDRs) from the Internet
+2. Transforming the scraped documents into structured JSON data
 3. Uploading to a PostgreSQL database
+4. Generating embeddings for semantic search
 
 Working documents and helper files not meant to be retained may be placed in the `artifacts` folder, which is ignored by git.
 
-To avoid confusion, you should keep your bash console opened to the project root folder and should specify all file paths in relation to the project root.
+To avoid confusion, keep your bash console opened to the project root and specify all file paths relative to root.
+
+#  Workflow
+
+There are currently 61 CCDRs, comprising 126 PDF files and a total of 8,185 pages. (Additional CCDRs are published regularly, so ultimately we will need to automate the end-to-end workflow to continually ingest newly published documents. But for now, the goal is proof of concept.)
+
+The ETL workflow is organized into `extract`, `transform`, and `load` folders. Each folder contains Python and Bash scripts with filenames numbered in a logical sequence (the order they were developed or are meant to be run).
+
+## Extraction
+
+The `extract` folder contains scripts for scraping the CCDRs from the World Bank Open Knowledge Repository. Each CCDR ("publication") may consist of one or more PDF files ("documents").
+
+First we collect links to the CCDR detail pages in `extract/data/publication_links.json`, an array with keys for publication "title", details page "url", "source" repository title, and "page_found" in the paginated CCDR collection results. Then we enrich this array—with data scraped from the publication details page, generated publication and document IDs, and LLM-generated document classifications—and write the result to an array in `extract/data/publication_details.json` with the following schema:
+
+```json
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "array",
+  "items": [
+    {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "abstract": {
+          "type": "string"
+        },
+        "citation": {
+          "type": "string"
+        },
+        "uri": {
+          "type": "string"
+        },
+        "downloadLinks": {
+          "type": "array",
+          "items": [
+            {
+              "type": "object",
+              "properties": {
+                "url": {
+                  "type": "string"
+                },
+                "text": {
+                  "type": "string"
+                },
+                "file_info": {
+                  "type": "object",
+                  "properties": {
+                    "mime_type": {
+                      "type": "string"
+                    },
+                    "charset": {
+                      "type": "string"
+                    },
+                    "content_length": {
+                      "type": "string"
+                    },
+                    "final_url": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "mime_type",
+                    "charset",
+                    "content_length",
+                    "final_url"
+                  ]
+                },
+                "to_download": {
+                  "type": "boolean"
+                },
+                "type": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "url",
+                "text",
+                "file_info",
+                "to_download",
+                "type",
+                "id"
+              ]
+            }
+          ]
+        }
+      },
+      "required": [
+        "title",
+        "abstract",
+        "citation",
+        "uri",
+        "downloadLinks"
+      ]
+    }
+  ]
+}
+```
+
+Finally, we download all PDF files to `extract/data/pub_*/dl_*.pdf`, where the asterisks are incrementing integers. (The document IDs skip some integers, corresponding to skipped plaintext versions of the PDF files.) Some downloaded files are compressed as `.bin`, so we unzip those.
+
+## Transformation
+
+In the `transform` folder, we first define our desired database schema and map it to the above JSON schema in [1_db_schema_design.md](mdc:transform/1_db_schema_design.md).
+
+From here, we explore various methods for transforming the downloaded PDF files into hierarchically structured data matching our schema. Ideally, we could do this in a single pass with a model specialized for the purpose. In practice, we will probably need a multi-step workflow. Perhaps the cumulative results from the multi-step workflow can eventually be used to create synthetic data for training a model.
+
+Currently, we have scripts for:
+
+1. Converting each page to an image and using a VLM to generate bounding box coordinates for contentful images such as charts and tables,
+2. Mechanically extracting text with pyMuPDF,
+3. Extracting text with an LLM,
+4. Identifying page ranges of [document components](https://sparontologies.github.io/doco/current/doco.html) with an LLM,
+5. Extracting hierarchical section headings from document text using an LLM, and
+6. Extracting hierarchical section headings from table of contents text using an LLM
+
+I would like to create some evals to measure workflow performance both on the individual subtasks and on the end-to-end workflow. We should create the most naive possible version of the end-to-end workflow and start with that. Then I'll see if I can improve on that. To measure performance, I can probably just use cosine similarity to a human-produced result.
+
+The steps, as I see them, roughly in order of priority/practicality:
+
+1. Create, for a few PDF pages, my own ideal human-produced example and a simple eval scoring script.
+2. Try giving Google Gemini a few PDF pages with a prompt to see what it can do out of the box. Try with both the actual PDF pages extracted from file and then with images of the pages.
+3. Run a PDF through a few commercial and open-source tools to see what outputs we get.
+4. Try using an LLM to draw bounding boxes around both text and images with an array to indicate reading order, and then mechanically extract. (Section hierarchy a challenge here; can we enrich with hierarchical heading extraction?)
+5. Try mechanical text extraction with markdown and see if maybe we can de mechanical image extraction as well, even though the images are SVGs and their boundaries are therefore hard to detect. (Reading order and section hierarchy a challenge here; can we guess them mechanically?)
+6. Try mechanical text extraction plus VLM image extraction. (Reading order and section hierarchy a challenge here; can we guide with an LLM?)
+
+## Loading
+
+Currently we have scripts for creating a PostgreSQL database matching our schema, for uploading `extract/data/publication_details.json` to our PostgreSQL tables, and for uploading PDFs to S3 (though this may ultimately be unnecessary, given that the PDFs are available online from the World Bank).
+
+In future, we will need to upload each document's extracted content nodes.
+

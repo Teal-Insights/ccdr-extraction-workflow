@@ -1,7 +1,7 @@
 ---
 description: 
-globs: **/*.py
-alwaysApply: false
+globs: 
+alwaysApply: true
 ---
 This project uses `uv` to manage dependencies and run Python files.
 

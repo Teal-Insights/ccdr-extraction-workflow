@@ -1,6 +1,7 @@
 .env
 .specstory
 .cursorindexingignore
+repomix-output.*
 node_modules
 extract/data/
 transform/images/

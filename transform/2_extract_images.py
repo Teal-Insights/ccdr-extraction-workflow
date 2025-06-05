@@ -212,6 +212,7 @@ async def detect_content_regions_with_retry(
                         completion,
                         model="gemini/gemini-2.5-flash-preview-05-20",
                         messages=messages,
+                        temperature=0.0,
                         response_format={"type": "json_object", "response_schema": ImageRegions.model_json_schema()}
                     )
                 )
