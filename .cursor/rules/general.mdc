@@ -24,96 +24,7 @@ The ETL workflow is organized into `extract`, `transform`, and `load` folders. E
 
 The `extract` folder contains scripts for scraping the CCDRs from the World Bank Open Knowledge Repository. Each CCDR ("publication") may consist of one or more PDF files ("documents").
 
-First we collect links to the CCDR detail pages in `extract/data/publication_links.json`, an array with keys for publication "title", details page "url", "source" repository title, and "page_found" in the paginated CCDR collection results. Then we enrich this array—with data scraped from the publication details page, generated publication and document IDs, and LLM-generated document classifications—and write the result to an array in `extract/data/publication_details.json` with the following schema:
-
-```json
-{
-  "$schema": "http://json-schema.org/draft-04/schema#",
-  "type": "array",
-  "items": [
-    {
-      "type": "object",
-      "properties": {
-        "title": {
-          "type": "string"
-        },
-        "abstract": {
-          "type": "string"
-        },
-        "citation": {
-          "type": "string"
-        },
-        "uri": {
-          "type": "string"
-        },
-        "downloadLinks": {
-          "type": "array",
-          "items": [
-            {
-              "type": "object",
-              "properties": {
-                "url": {
-                  "type": "string"
-                },
-                "text": {
-                  "type": "string"
-                },
-                "file_info": {
-                  "type": "object",
-                  "properties": {
-                    "mime_type": {
-                      "type": "string"
-                    },
-                    "charset": {
-                      "type": "string"
-                    },
-                    "content_length": {
-                      "type": "string"
-                    },
-                    "final_url": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "mime_type",
-                    "charset",
-                    "content_length",
-                    "final_url"
-                  ]
-                },
-                "to_download": {
-                  "type": "boolean"
-                },
-                "type": {
-                  "type": "string"
-                },
-                "id": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "url",
-                "text",
-                "file_info",
-                "to_download",
-                "type",
-                "id"
-              ]
-            }
-          ]
-        }
-      },
-      "required": [
-        "title",
-        "abstract",
-        "citation",
-        "uri",
-        "downloadLinks"
-      ]
-    }
-  ]
-}
-```
+First we collect links to the CCDR detail pages in `extract/data/publication_links.json`, an array with keys for publication "title", details page "url", "source" repository title, and "page_found" in the paginated CCDR collection results. Then we enrich this array—with data scraped from the publication details page, generated publication and document IDs, and LLM-generated document classifications—and write the result to an array in `extract/data/publication_details.json` with the following schema: `extract/data/publication_details_schema.json`.
 
 Finally, we download all PDF files to `extract/data/pub_*/dl_*.pdf`, where the asterisks are incrementing integers. (The document IDs skip some integers, corresponding to skipped plaintext versions of the PDF files.) Some downloaded files are compressed as `.bin`, so we unzip those.
 
@@ -123,14 +34,14 @@ In the `transform` folder, we first define our desired database schema and map i
 
 From here, we explore various methods for transforming the downloaded PDF files into hierarchically structured data matching our schema. Ideally, we could do this in a single pass with a model specialized for the purpose. In practice, we will probably need a multi-step workflow. Perhaps the cumulative results from the multi-step workflow can eventually be used to create synthetic data for training a model.
 
-Currently, we have scripts for:
+Currently, we have scripts to:
 
-1. Converting each page to an image and using a VLM to generate bounding box coordinates for contentful images such as charts and tables,
-2. Mechanically extracting text with pyMuPDF,
-3. Extracting text with an LLM,
-4. Identifying page ranges of [document components](https://sparontologies.github.io/doco/current/doco.html) with an LLM,
-5. Extracting hierarchical section headings from document text using an LLM, and
-6. Extracting hierarchical section headings from table of contents text using an LLM
+1. Convert each page to an image and use a VLM to generate bounding box coordinates for contentful images such as charts and tables, writing the result to `transform/images/document_regions.json` (schema in `transform/images/document_regions_schema.json`)
+2. Mechanically extract text with pyMuPDF and write to `transform/text/text_content.json`
+3. Clean up extracted text and convert to markdown with an LLM, writing to `transform/text/text_content_processed.json`
+4. Identify page ranges of [document components](mdc:https:/sparontologies.github.io/doco/current/doco.html) with an LLM and write to `transform/text/sections.json` (schema in `transform/text/sections_schema.json`)
+5. Extract hierarchical section headings from table of contents text using an LLM and write to `transform/text/hierarchical_headings.json`
+6. Extract hierarchical section headings from a document without ToC using an LLM and write to `transform/text/headings.json`
 
 I would like to create some evals to measure workflow performance both on the individual subtasks and on the end-to-end workflow. We should create the most naive possible version of the end-to-end workflow and start with that. Then I'll see if I can improve on that. To measure performance, I can probably just use cosine similarity to a human-produced result.
 
