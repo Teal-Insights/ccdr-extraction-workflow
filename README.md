@@ -66,9 +66,9 @@ erDiagram
     %% Relationship lines
     PUBLICATION ||--o{ DOCUMENT : has
     DOCUMENT ||--|{ CONTENT_NODE : contains
-    CONTENT_NODE }|--o{ CONTENT_NODE : is_child_of
+    CONTENT_NODE ||--o{ RELATION : source_of
+    CONTENT_NODE ||--o{ RELATION : target_of
     CONTENT_NODE ||--o{ EMBEDDING : has
-    CONTENT_NODE ||--o{ FOOTNOTE_REFERENCE : references
     
     %% Entity: PUBLICATION
     PUBLICATION {
@@ -95,26 +95,69 @@ erDiagram
         bigint file_size "Size of the document in bytes"
     }
 
+    %% ENUM: DocumentComponentType
+    DocumentComponentType {
+        string DOCUMENT
+        string PART
+        string CHAPTER
+        string SECTION
+        string PARAGRAPH
+        string HEADER
+        string FOOTER
+        string ENDNOTE_SECTION
+        string TABLE
+        string FIGURE
+        string CAPTION
+        string LIST
+        string LIST_ITEM
+        string FOOTNOTE
+        string BIBLIOGRAPHIC_ENTRY
+        string TITLE
+        string SUBTITLE
+        string FORMULA
+    }
+
     %% ENTITY: CONTENT_NODE
     CONTENT_NODE {
-        string id PK "Unique node identifier (cn_XXX)"
+        string id PK
         string document_id FK
-        string parent_node_id FK
-        string node_type "Type (HEADING, PARAGRAPH, TABLE, IMAGE)"
-        text raw_content "Optional original text content of the node"
-        text content "Optional cleaned text content of the node"
-        string storage_url "Optional URL to the node storage bucket (s3://...)"
-        string caption "Optional original caption for the node (image, table, etc.)"
-        string description "Optional VLM description of the node (image, table, etc.)"
-        int sequence_in_parent "Sequence number in the parent node"
-        int sequence_in_document "Sequence number in the document"
-        int start_page_pdf "Start page of the node in the PDF"
-        int end_page_pdf "End page of the node in the PDF"
-        string start_page_logical "Numbered start page of the node"
-        string end_page_logical "Numbered end page of the node"
-        json bounding_box "Bounding box of the node in the document"
+        text raw_content
+        text content
+        string storage_url
+        
+        %% Semantic & Descriptive Fields
+        DocumentComponentType doco_type
+        string caption "The original caption from the source (for figures, tables)"
+        string description "AI-generated summary/description (for tables, figures)"
+        
+        %% Ordering & Sequencing
+        int sequence_in_parent
+        decimal sequence_in_document
+        
+        %% Positional Data
+        jsonb positional_data "[{page_pdf, page_logical, char_range_start, char_range_end, bounding_box}, ...]"
     }
-    
+
+    %% ENUM: RelationType
+    RelationType {
+        string CONTAINS "A parent contains a child (primary hierarchy)"
+        string REFERENCES_FOOTNOTE "Text references a footnote"
+        string REFERENCES_CITATION "Text references a bibliographic entry"
+        string IS_SUPPLEMENTED_BY "A node is supplemented by another node (e.g., a sidebar or legend)"
+        string CONTINUES "A node continues from a previous one (e.g., across sections)"
+        string CROSS_REFERENCES "A node references another arbitrary node"
+    }
+
+    %% ENTITY: RELATION
+    RELATION {
+        string id PK "Unique relation identifier (rel_XXX)"
+        string source_node_id FK "The origin node of the relationship"
+        string target_node_id FK "The destination node of the relationship"
+        RelationType relation_type "The semantic type of the relationship"
+        string marker_text "Optional text for the relation, e.g., '1' for a footnote or '(Author, 2025)' for a citation"
+        int sequence_in_source "Optional sequence if a source has multiple relations of the same type"
+    }
+
     %% ENTITY: EMBEDDING
     EMBEDDING {
         string id PK "Unique embedding identifier (em_XXX)"
@@ -123,13 +166,11 @@ erDiagram
         string model_name "Name of the embedding model"
         timestamp created_at "Timestamp of when the embedding was created"
     }
-    
-    %% ENTITY: FOOTNOTE_REFERENCE
-    FOOTNOTE_REFERENCE {
-        string id PK "Unique footnote reference identifier (fr_XXX)"
-        string referencing_node_id FK
-        string definition_node_id FK
-        string marker_text "Text that marks the footnote reference (usually a number, letter, or symbol)"
-        int sequence_in_node "Sequence number in the node"
-    }
+
+    %% ===== CSS STYLING =====
+    classDef enumType fill:#ffe6e6,stroke:#ff4757
+    classDef mainTable fill:#e6f3ff,stroke:#0066cc
+
+    class DocumentComponentType,RelationType enumType
+    class PUBLICATION,DOCUMENT,CONTENT_NODE,RELATION,EMBEDDING mainTable
 ```
