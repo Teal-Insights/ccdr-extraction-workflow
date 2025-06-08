@@ -17,7 +17,7 @@ We have basically four options, which involve some tradeoffs with regard to inge
 Our design is guided by four key principles:
 
 * **Documents as Directed Acyclic Graphs (DAGs):** Documents are not simple trees. Elements like footnotes, citations, and cross-references create a graph structure that may include one-to-many or even many-to-many relationships between children and parents. Our model embraces this complexity while maintaining an acyclic hierarchy.
-* **Content Nodes as Logical Units:** A `CONTENT_NODE` represents a complete logical unit (e.g., a full paragraph, a table), irrespective of how it is physically laid out across page breaks.
+* **Semantic Content Nodes as Logical Units:** A `SEMANTIC_NODE` represents a complete logical unit (e.g., a full paragraph, a table), irrespective of how it is physically laid out across page breaks.
 * **Explicit Relationship Modeling:** Instead of overloading nodes with numerous foreign keys, a dedicated `RELATION` table defines the semantic connections (the "edges") between nodes, making the model extensible and clear.
 * **Leveraging Document Ontologies for Semantic Types:** We review [existing document ontologies](https://sparontologies.github.io/doco/current/doco.html) for inspiration in constructing our own rich set of enum types. We select disjoint, content-based types rather than nested section and container types, except where the container implies its content is not part of the primary content or does not follow linear reading order. This enables powerful filtering and ranking logic without complex nesting.
 * **Sequencing by Logical Reading Order:** We use the `sequence_in_document` field to order nodes by their logical reading order, which is different from the physical layout of the document.
@@ -27,7 +27,7 @@ Our design is guided by four key principles:
 erDiagram
     %% Relationship lines
     PUBLICATION ||--o{ DOCUMENT : has
-    DOCUMENT ||--|{ CONTENT_NODE : contains
+    DOCUMENT ||--|{ SEMANTIC_NODE : contains
     DOCUMENT_COMPONENT ||--o{ DOCUMENT_COMPONENT : "contains (self-reference)"
     DOCUMENT_COMPONENT ||--o{ SEMANTIC_NODE : contains
     SEMANTIC_NODE      ||--o{ RELATION : source_of
@@ -180,7 +180,7 @@ erDiagram
 
 * **Positional Data and Page Breaks:**
     * We will use a dual approach:
-        1.  **Metadata:** The `positional_data` JSONB array in `CONTENT_NODE` stores PDF page numbers and precise bounding boxes for each part of a node, enabling accurate UI highlighting.
+        1.  **Metadata:** The `positional_data` JSONB array in `SEMANTIC_NODE` stores PDF page numbers and precise bounding boxes for each part of a node, enabling accurate UI highlighting.
         2.  **Page Break Markers:** A human-readable `[page break]` marker can be inserted into the `content` field for display and citation purposes, but should be stripped before creating embeddings.
         3.  **GIN Indexing:** We will use a GIN index on the `positional_data` JSONB array to enable efficient range queries with the `@>` operator, and a reusable plpgsql function to retrieve content nodes by page number.
         4.  **Logical Page Numbers as Both Content Nodes and Metadata:** We will create a `PAGE_NUMBER` content node for page numbers in the header or footer, and then post-ingestion we will enrich other nodes' positional data with logical page numbers by mapping the PDF page numbers to the logical page numbers.
