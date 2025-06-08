@@ -207,6 +207,6 @@ erDiagram
     classDef enumType fill:#ffe6e6,stroke:#ff4757
     classDef mainTable fill:#e6f3ff,stroke:#0066cc
 
-    class DocumentComponentType,RelationType enumType
+    class DocumentType,ComponentType,RelationType,ContentNodeType,EmbeddingSource enumType
     class PUBLICATION,DOCUMENT,DOCUMENT_COMPONENT,CONTENT_NODE,RELATION,EMBEDDING mainTable
 ```
