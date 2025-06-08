@@ -56,6 +56,7 @@ erDiagram
     %% ENTITY: DOCUMENT
     DOCUMENT {
         string id PK "Unique document identifier (dl_XXX)"
+        string publication_id FK "FK to the PUBLICATION that contains this document"
         DocumentType type "Type of document"
         string download_url "URL to the source document download endpoint"
         string description "Description of the document"
