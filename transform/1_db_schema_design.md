@@ -28,6 +28,7 @@ erDiagram
     %% Relationship lines
     PUBLICATION ||--o{ DOCUMENT : has
     DOCUMENT ||--|{ SEMANTIC_NODE : contains
+    DOCUMENT ||--|{ DOCUMENT_COMPONENT : contains
     DOCUMENT_COMPONENT ||--o{ DOCUMENT_COMPONENT : "contains (self-reference)"
     DOCUMENT_COMPONENT ||--o{ SEMANTIC_NODE : contains
     SEMANTIC_NODE      ||--o{ RELATION : source_of
