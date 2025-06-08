@@ -1,5 +1,17 @@
 # A Graph-Based Schema for RAG
 
+## **0. The problem**
+
+We have basically four options, which involve some tradeoffs with regard to ingestion difficulty, queryability, and performance.
+
+1. A single flat `content_nodes` table, where every chunk is sequentially numbered and is assigned a semantic chunk type (e.g., "paragraph", "heading") and a document section type (e.g., "front matter", "body text", "footer"), and we enrich a bit by adding heading levels for headers and decimal sequence numbers for stuff like headers and footers that isn't part of the linear reading order. Very ingestable/searchable, but requires some fancy querying work to do stuff like search within a section (which is a use case I want to support). Not a very rich representation of the document structure.
+
+2. A flat `content_nodes` table where every record is a semantic chunk type and has a document component type, but we use a supplemental `relations` table rather than sequence numbers to enrich with some info about document structure. For example, the first paragraph after a section header "continues" from the header but also "is contained by" the header. This basically enriches the flat table with hierarchical information should we want it. This somewhat mixes concerns about structure/reading order and different node types, though that's not the end of the world. More importantly, I'm not sure how headers and footers fit into a structure like this. They could perhaps have a "supplements" or "annotates" relation to other stuff on the page, or we might let the page_number field be the only relation (since the main reason to capture headers and footers is for page number mapping anyway). With this option we do lose some structural information, like the ability to have a semantic node (say, an endnote) belong to more than one document component (say, both endnote section and back matter).
+
+3. A `content_nodes` table that contains a mixture of document component types (effectively containers that represent document structure) and semantic types (that represent discrete chunks of text/image content), where the branches are always document components and the leaves are always semantic, and we use a supplemental `relations` table to represent the relationships between nodes. A richer representation of the data, but difficult to create and unintuitive to work with because of how it mixes different data types in a single nested structure. We can still use `continues` and `contains` relations or filtering by enum types to functionally treat the document as flat or hierarchical, depending what we want to do.
+
+4. Two tables, one for `content_nodes` (semantic chunks) and one for `document_components` (structural containers). The `relations` model gets complicated because we have two tables, but we could instead use foreign keys. E.g., each semantic content node might have a foreign key to the previous and next node, as well as a foreign key to any containing parent. This keeps the semantic content table flat and eliminates the need to filter for purposes of querying, and it maintains a good separation of concerns. It also enforces, within the schema itself, the constraint that the leaves are always semantic nodes that don't contain anything, while the branches are always document components. Maybe a bit less performant than option 3 if option 3 uses a closure table, though a closure table could be added to option 4 as well if performance becomes an issue. This feels to me like the cleanest option. It also lends itself to solving the ingestion problem in stages. In the first stage we can just ingest the semantic content nodes and non-hierarchical relations, and in the second stage we can enrich with document components and their relations.
+
 ## **1. Core Philosophy**
 
 Our design is guided by four key principles:
@@ -7,8 +19,7 @@ Our design is guided by four key principles:
 * **Documents as Directed Acyclic Graphs (DAGs):** Documents are not simple trees. Elements like footnotes, citations, and cross-references create a graph structure that may include one-to-many or even many-to-many relationships between children and parents. Our model embraces this complexity while maintaining an acyclic hierarchy.
 * **Content Nodes as Logical Units:** A `CONTENT_NODE` represents a complete logical unit (e.g., a full paragraph, a table), irrespective of how it is physically laid out across page breaks.
 * **Explicit Relationship Modeling:** Instead of overloading nodes with numerous foreign keys, a dedicated `RELATION` table defines the semantic connections (the "edges") between nodes, making the model extensible and clear.
-* **Leveraging DoCo for Semantic Types:** We use the Document Components Ontology (DoCo) as inspiration for a rich set of enum types, enabling powerful filtering and ranking logic and providing a model for thinking about headers and footers as containers.
-* **Page Numbers as Positional Information:** Page numbers are important to determine the position of a node in the document to enable precise "go to source" highlighting, but they are not content nodes or part of the logical hierarchy.
+* **Leveraging Document Ontologies for Semantic Types:** We review [existing document ontologies](https://sparontologies.github.io/doco/current/doco.html) for inspiration in constructing our own rich set of enum types. We select disjoint, content-based types rather than nested section and container types, except where the container implies its content is not part of the primary content or does not follow linear reading order. This enables powerful filtering and ranking logic without complex nesting.
 * **Sequencing by Logical Reading Order:** We use the `sequence_in_document` field to order nodes by their logical reading order, which is different from the physical layout of the document.
 * **Performance:** Proper database indexing on the foreign key fields (`source_node_id`, `target_node_id`) is essential and will ensure relational lookups are highly efficient.
 
@@ -17,10 +28,11 @@ erDiagram
     %% Relationship lines
     PUBLICATION ||--o{ DOCUMENT : has
     DOCUMENT ||--|{ CONTENT_NODE : contains
-    CONTENT_NODE ||--o{ RELATION : source_of
-    CONTENT_NODE ||--o{ RELATION : target_of
-    CONTENT_NODE ||--o{ EMBEDDING : has
-    
+    DOCUMENT_COMPONENT ||--o{ DOCUMENT_COMPONENT : "contains (self-reference)"
+    DOCUMENT_COMPONENT ||--o{ SEMANTIC_NODE : contains
+    SEMANTIC_NODE      ||--o{ RELATION : source_of
+    SEMANTIC_NODE      ||--o{ RELATION : target_of
+
     %% Entity: PUBLICATION
     PUBLICATION {
         string id PK "Unique publication identifier (pub_XXX)"
@@ -34,65 +46,99 @@ erDiagram
         string uri "Persistent handle.net URI that redirects to source_url"
     }
 
+    %% ENUM: DocumentType
+    DocumentType {
+        string MAIN "The main document"
+        string SUPPLEMENTAL "A supplemental document"
+        string OTHER "Other document type"
+    }
+
     %% ENTITY: DOCUMENT
     DOCUMENT {
         string id PK "Unique document identifier (dl_XXX)"
-        string type "Type of document (MAIN, SUPPLEMENTAL, OTHER)"
+        DocumentType type "Type of document"
         string download_url "URL to the source document download endpoint"
         string description "Description of the document"
         string mime_type "MIME type of the document"
         string charset "Character set of the document"
         string storage_url "URL to the document storage bucket (s3://...)"
         bigint file_size "Size of the document in bytes"
+        string language "Language of the document"
+        string version "Version of the document"
     }
 
-    %% ENUM: DocumentComponentType
-    DocumentComponentType {
-        string DOCUMENT
-        string PART
-        string CHAPTER
-        string SECTION
-        string PARAGRAPH
-        string HEADER
+    %% ENUM: ComponentType (Structural Nodes)
+    ComponentType {
+        string ACKNOWLEDGEMENTS
+        string APPENDIX
+        string BIBLIOGRAPHY
+        string DEDICATION
         string FOOTER
-        string ENDNOTE_SECTION
-        string TABLE
-        string FIGURE
-        string CAPTION
+        string FRONT_MATTER
+        string HEADER
+        string INDEX
         string LIST
-        string LIST_ITEM
-        string FOOTNOTE
-        string BIBLIOGRAPHIC_ENTRY
-        string TITLE
-        string SUBTITLE
-        string FORMULA
+        string NOTES_SECTION
+        string TABLE_OF_BOXES
+        string TABLE_OF_CONTENTS
+        string TABLE_OF_FIGURES
+        string TABLE_OF_TABLES
     }
 
-    %% ENTITY: CONTENT_NODE
-    CONTENT_NODE {
+    %% ENUM: SemanticNodeType (Content Nodes)
+    SemanticNodeType {
+        string ABSTRACT
+        string BLOCK_QUOTATION
+        string BIBLIOGRAPHIC_ENTRY
+        string CAPTION
+        string FIGURE
+        string FORMULA
+        string LIST_ITEM
+        string NOTE
+        string PARAGRAPH
+        string PAGE_NUMBER
+        string SUBTITLE
+        string TABLE
+        string TEXT_BOX
+        string TITLE
+    }
+
+    %% ENTITY: DOCUMENT_COMPONENT (The Containers/Structure)
+    DOCUMENT_COMPONENT {
         string id PK
         string document_id FK
-        text raw_content
-        text content
-        string storage_url
-        
-        %% Semantic & Descriptive Fields
-        DocumentComponentType doco_type
+        ComponentType component_type "The type of structural container"
+        string title "The heading/title of this component, e.g., 'Chapter 1: Introduction'"
+        string parent_component_id FK "Self-referencing FK to build the hierarchy"
+        int sequence_in_parent "Order of this component within its parent"
+    }
+
+    %% ENUM: EmbeddingSource
+    EmbeddingSource {
+        string TEXT_CONTENT "Embed the primary text content"
+        string DESCRIPTION  "Embed the AI-generated description (for tables, figures)"
+        string CAPTION "Embed the original caption (for figures, tables)"
+    }
+
+    %% ENTITY: SEMANTIC_NODE
+    SEMANTIC_NODE {
+        string id PK
+        string document_id FK
+        string parent_component_id FK "FK to the DOCUMENT_COMPONENT that contains this node"
+        SemanticNodeType semantic_node_type
+        text content "The primary, cleaned text content of the node"
+        string storage_url "For binary content like images"
         string caption "The original caption from the source (for figures, tables)"
-        string description "AI-generated summary/description (for tables, figures)"
-        
-        %% Ordering & Sequencing
-        int sequence_in_parent
-        decimal sequence_in_document
-        
-        %% Positional Data
+        string description "AI-generated summary/description (for figures, tables)"
+        EmbeddingSource embedding_source "Which field to use for the vector embedding"
+        int sequence_in_parent_major "Order of this chunk within its parent component"
+        int sequence_in_parent_minor "Zero unless the node is a footnote or sidebar, in which case it indicates reading order among these supplementary nodes"
         jsonb positional_data "[{page_pdf, page_logical, char_range_start, char_range_end, bounding_box}, ...]"
     }
 
-    %% ENUM: RelationType
+    %% ENUM: RelationType (For non-hierarchical links)
     RelationType {
-        string CONTAINS "A parent contains a child (primary hierarchy)"
-        string REFERENCES_FOOTNOTE "Text references a footnote"
+        string REFERENCES_NOTE "Text references a footnote or endnote"
         string REFERENCES_CITATION "Text references a bibliographic entry"
         string IS_SUPPLEMENTED_BY "A node is supplemented by another node (e.g., a sidebar or legend)"
         string CONTINUES "A node continues from a previous one (e.g., across sections)"
@@ -104,9 +150,8 @@ erDiagram
         string id PK "Unique relation identifier (rel_XXX)"
         string source_node_id FK "The origin node of the relationship"
         string target_node_id FK "The destination node of the relationship"
-        RelationType relation_type "The semantic type of the relationship"
+        RelationType relation_type
         string marker_text "Optional text for the relation, e.g., '1' for a footnote or '(Author, 2025)' for a citation"
-        int sequence_in_source "Optional sequence if a source has multiple relations of the same type"
     }
 
     %% ENTITY: EMBEDDING
@@ -123,37 +168,40 @@ erDiagram
     classDef mainTable fill:#e6f3ff,stroke:#0066cc
 
     class DocumentComponentType,RelationType enumType
-    class PUBLICATION,DOCUMENT,CONTENT_NODE,RELATION,EMBEDDING mainTable
+    class PUBLICATION,DOCUMENT,DOCUMENT_COMPONENT,SEMANTIC_NODE,RELATION,EMBEDDING mainTable
 ```
 
-### **3. Key Decisions**
+## **3. Key Decisions**
 
 * **Footnotes, Citations, and Markers:**
-    * **Markers are Attributes, Not Nodes:** A reference marker (e.g., the superscript `¹`, in-text `[22]`, or parenthetical `(Author, 2025)`) is not its own content node. Creating a node for every marker would needlessly proliferate nodes. Instead, the marker is an attribute of the relationship itself, stored in the `marker_text` field of the `RELATION` table.
-    * **Multi-Hop Relationships:** The model robustly handles complex chains. For a paragraph that references a footnote that corresponds to a bibliographic entry, the graph traversal is: `[PARAGRAPH]` -> `REFERENCES_FOOTNOTE` -> `[FOOTNOTE]` -> `REFERENCES_CITATION` -> `[BIBLIOGRAPHIC_ENTRY]`.
-    * **Deferred Relationship Resolution:** When sequentially processing a document, we can create a `REFERENCES_FOOTNOTE` or `REFERENCES_CITATION` relation with populated `source_node_id` and `marker_text` when we encounter a note marker, and then we can fill in `target_node_id` later when we encounter the corresponding node.
+    * **Markers are Attributes, Not Nodes:** A reference marker (e.g., the superscript `¹`, in-text `[22]`, or parenthetical `(Author, 2025)`) is not its own content node. Creating a node for every marker would needlessly proliferate nodes and complicate the schema. Instead, the marker is an attribute of the relationship itself, stored in the `marker_text` field of the `RELATION` table.
+    * **Multi-Hop Relationships:** The model robustly handles complex chains. For a paragraph that references a footnote that corresponds to a bibliographic entry, the graph traversal is: `[PARAGRAPH]` -> `REFERENCES_NOTE` -> `[FOOTNOTE]` -> `REFERENCES_CITATION` -> `[BIBLIOGRAPHIC_ENTRY]`.
+    * **Deferred Relationship Resolution:** When sequentially processing a document, we can create a `REFERENCES_NOTE` or `REFERENCES_CITATION` relation with populated `source_node_id` and `marker_text` when we encounter a note marker, and then we can fill in `target_node_id` later when we encounter the corresponding node.
 
 * **Positional Data and Page Breaks:**
     * We will use a dual approach:
-        1.  **Metadata:** The `positional_data` JSONB array in `CONTENT_NODE` stores precise page numbers and bounding boxes for each part of a node, enabling accurate UI highlighting.
-        2.  **Content:** A human-readable `[page break]` marker can be inserted into the `content` field for display and citation purposes, but should be stripped before creating embeddings.
+        1.  **Metadata:** The `positional_data` JSONB array in `CONTENT_NODE` stores PDF page numbers and precise bounding boxes for each part of a node, enabling accurate UI highlighting.
+        2.  **Page Break Markers:** A human-readable `[page break]` marker can be inserted into the `content` field for display and citation purposes, but should be stripped before creating embeddings.
         3.  **GIN Indexing:** We will use a GIN index on the `positional_data` JSONB array to enable efficient range queries with the `@>` operator, and a reusable plpgsql function to retrieve content nodes by page number.
+        4.  **Logical Page Numbers as Both Content Nodes and Metadata:** We will create a `PAGE_NUMBER` content node for page numbers in the header or footer, and then post-ingestion we will enrich other nodes' positional data with logical page numbers by mapping the PDF page numbers to the logical page numbers.
 
-* **Sequencing for Reading Order:**
-    * When sequencing for reading order, we will leave chapter notes and end notes in their own sections, but we will insert footnotes after the referencing paragraph and sidebars and figures wherever seems most natural.
-    * The `sequence_in_document` field will use a decimal system to number inserted nodes so that sequential numbering is preserved if we should choose to omit these during document rendering.
-    * The `CONTINUES` relation type will skip over inserted nodes, which will use other relation types to connect to the primary content.
+* **Reading Order:**
+    * On initial ingestion (before we have the document components), we will use `CONTINUES` relations to order the nodes by their logical reading order.
+    * After ingesting the semantic nodes and creating the document components, we can traverse `CONTINUES` relations to enrich the data with `sequence_in_parent` values for faster querying.
+    * Primary content related by `CONTINUES` will use integer sequence numbers, while sidebars and text boxes with `IS_SUPPLEMENTED_BY` or footnotes with `REFERENCES_NOTE` will use the sequence number of the referencing node with a minor sequence number to indicate reading order among the supplementary nodes. We can then optionally include these or not after the referencing node when linearly rendering the text in a UI.
+    * We will sequence endnotes, chapter notes, and bibliographic entries at their original positions in the document, on the theory that the author or publisher has already decided the best place for them.
+    * We could probably discard the `CONTINUES` relations after we have the document components, since they will be redundant with the `sequence_in_parent` field, and Gemini says DFS is more performant for linearly rendering the document than finding the first node and then following the linked list. (We could run a benchmark to confirm this.)
 
-### **4. Unlocking Advanced RAG Capabilities**
+## **4. Unlocking Advanced RAG Capabilities**
 
 This schema is explicitly designed to enable more intelligent RAG:
 
-* **Content-Aware Chunking:** Chunks are logical `CONTENT_NODE`s (a paragraph, a table) rather than arbitrary character-count blocks.
+* **Content-Aware Chunking:** Chunks are logical `SEMANTIC_NODE`s (a paragraph, a table) rather than arbitrary character-count blocks.
 * **Smarter Embeddings:** We will embed the rich text `description` for tables and figures, which is more semantically meaningful than embedding their raw structure or image data.
-* **Precision Retrieval (Pre-filtering):** The `doco_type` allows queries to be filtered *before* the vector search (e.g., "search only within nodes of type `TABLE`") for faster queries and more targeted results.
+* **Precision Retrieval (Pre-filtering):** The `semantic_node_type` allows queries to be filtered *before* the vector search (e.g., "search only within nodes of type `TABLE`") for faster queries and more targeted results.
 * **Contextual Re-ranking and Graph Retrieval:** After an initial vector search, an LLM can use relationships or metadata to re-rank results or retrieve related nodes.
 
-## JSON to Database Schema Mapping
+## **5. JSON to Database Schema Mapping**
 
 ### PUBLICATION Table
 | JSON Path                     | DB Field            | Notes                              
