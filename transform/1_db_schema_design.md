@@ -17,7 +17,7 @@ We have basically four options, which involve some tradeoffs with regard to inge
 Our design is guided by four key principles:
 
 * **Documents as Directed Acyclic Graphs (DAGs):** Documents are not simple trees. Elements like footnotes, citations, and cross-references create a graph structure that may include one-to-many or even many-to-many relationships between children and parents. Our model embraces this complexity while maintaining an acyclic hierarchy.
-* **Semantic Content Nodes as Logical Units:** A `SEMANTIC_NODE` represents a complete logical unit (e.g., a full paragraph, a table), irrespective of how it is physically laid out across page breaks.
+* **Content Nodes as Logical Units:** A `CONTENT_NODE` represents a complete logical unit (e.g., a full paragraph, a table), irrespective of how it is physically laid out across page breaks.
 * **Explicit Relationship Modeling:** Instead of overloading nodes with numerous foreign keys, a dedicated `RELATION` table defines the semantic connections (the "edges") between nodes, making the model extensible and clear.
 * **Leveraging Document Ontologies for Semantic Types:** We review [existing document ontologies](https://sparontologies.github.io/doco/current/doco.html) for inspiration in constructing our own rich set of enum types. We select disjoint, content-based types rather than nested section and container types, except where the container implies its content is not part of the primary content or does not follow linear reading order. This enables powerful filtering and ranking logic without complex nesting.
 * **Sequencing by Logical Reading Order:** We use the `sequence_in_document` field to order nodes by their logical reading order, which is different from the physical layout of the document.
@@ -27,12 +27,12 @@ Our design is guided by four key principles:
 erDiagram
     %% Relationship lines
     PUBLICATION ||--o{ DOCUMENT : has
-    DOCUMENT ||--|{ SEMANTIC_NODE : contains
+    DOCUMENT ||--|{ CONTENT_NODE : contains
     DOCUMENT ||--|{ DOCUMENT_COMPONENT : contains
     DOCUMENT_COMPONENT ||--o{ DOCUMENT_COMPONENT : "contains (self-reference)"
-    DOCUMENT_COMPONENT ||--o{ SEMANTIC_NODE : contains
-    SEMANTIC_NODE      ||--o{ RELATION : source_of
-    SEMANTIC_NODE      ||--o{ RELATION : target_of
+    DOCUMENT_COMPONENT ||--o{ CONTENT_NODE : contains
+    CONTENT_NODE      ||--o{ RELATION : source_of
+    CONTENT_NODE      ||--o{ RELATION : target_of
 
     %% Entity: PUBLICATION
     PUBLICATION {
@@ -87,8 +87,8 @@ erDiagram
         string TABLE_OF_TABLES
     }
 
-    %% ENUM: SemanticNodeType (Content Nodes)
-    SemanticNodeType {
+    %% ENUM: ContentNodeType (Content Nodes)
+    ContentNodeType {
         string ABSTRACT
         string BLOCK_QUOTATION
         string BIBLIOGRAPHIC_ENTRY
@@ -122,12 +122,12 @@ erDiagram
         string CAPTION "Embed the original caption (for figures, tables)"
     }
 
-    %% ENTITY: SEMANTIC_NODE
-    SEMANTIC_NODE {
+    %% ENTITY: CONTENT_NODE
+    CONTENT_NODE {
         string id PK
         string document_id FK
         string parent_component_id FK "FK to the DOCUMENT_COMPONENT that contains this node"
-        SemanticNodeType semantic_node_type
+        ContentNodeType content_node_type
         text content "The primary, cleaned text content of the node"
         string storage_url "For binary content like images"
         string caption "The original caption from the source (for figures, tables)"
@@ -170,7 +170,7 @@ erDiagram
     classDef mainTable fill:#e6f3ff,stroke:#0066cc
 
     class DocumentComponentType,RelationType enumType
-    class PUBLICATION,DOCUMENT,DOCUMENT_COMPONENT,SEMANTIC_NODE,RELATION,EMBEDDING mainTable
+    class PUBLICATION,DOCUMENT,DOCUMENT_COMPONENT,CONTENT_NODE,RELATION,EMBEDDING mainTable
 ```
 
 ## **3. Key Decisions**
@@ -182,7 +182,7 @@ erDiagram
 
 * **Positional Data and Page Breaks:**
     * We will use a dual approach:
-        1.  **Metadata:** The `positional_data` JSONB array in `SEMANTIC_NODE` stores PDF page numbers and precise bounding boxes for each part of a node, enabling accurate UI highlighting.
+        1.  **Metadata:** The `positional_data` JSONB array in `CONTENT_NODE` stores PDF page numbers and precise bounding boxes for each part of a node, enabling accurate UI highlighting.
         2.  **Page Break Markers:** A human-readable `[page break]` marker can be inserted into the `content` field for display and citation purposes, but should be stripped before creating embeddings.
         3.  **GIN Indexing:** We will use a GIN index on the `positional_data` JSONB array to enable efficient range queries with the `@>` operator, and a reusable plpgsql function to retrieve content nodes by page number.
         4.  **Logical Page Numbers as Both Content Nodes and Metadata:** We will create a `PAGE_NUMBER` content node for page numbers in the header or footer, and then post-ingestion we will enrich other nodes' positional data with logical page numbers by mapping the PDF page numbers to the logical page numbers.
@@ -198,9 +198,9 @@ erDiagram
 
 This schema is explicitly designed to enable more intelligent RAG:
 
-* **Content-Aware Chunking:** Chunks are logical `SEMANTIC_NODE`s (a paragraph, a table) rather than arbitrary character-count blocks.
+* **Content-Aware Chunking:** Chunks are logical `CONTENT_NODE`s (a paragraph, a table) rather than arbitrary character-count blocks.
 * **Smarter Embeddings:** We will embed the rich text `description` for tables and figures, which is more semantically meaningful than embedding their raw structure or image data.
-* **Precision Retrieval (Pre-filtering):** The `semantic_node_type` allows queries to be filtered *before* the vector search (e.g., "search only within nodes of type `TABLE`") for faster queries and more targeted results.
+* **Precision Retrieval (Pre-filtering):** The `content_node_type` allows queries to be filtered *before* the vector search (e.g., "search only within nodes of type `TABLE`") for faster queries and more targeted results.
 * **Contextual Re-ranking and Graph Retrieval:** After an initial vector search, an LLM can use relationships or metadata to re-rank results or retrieve related nodes.
 
 ## **5. JSON to Database Schema Mapping**

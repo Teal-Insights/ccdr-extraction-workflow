@@ -65,12 +65,12 @@ graph TB
 erDiagram
     %% Relationship lines
     PUBLICATION ||--o{ DOCUMENT : has
-    DOCUMENT ||--|{ SEMANTIC_NODE : contains
+    DOCUMENT ||--|{ CONTENT_NODE : contains
     DOCUMENT ||--|{ DOCUMENT_COMPONENT : contains
     DOCUMENT_COMPONENT ||--o{ DOCUMENT_COMPONENT : "contains (self-reference)"
-    DOCUMENT_COMPONENT ||--o{ SEMANTIC_NODE : contains
-    SEMANTIC_NODE      ||--o{ RELATION : source_of
-    SEMANTIC_NODE      ||--o{ RELATION : target_of
+    DOCUMENT_COMPONENT ||--o{ CONTENT_NODE : contains
+    CONTENT_NODE      ||--o{ RELATION : source_of
+    CONTENT_NODE      ||--o{ RELATION : target_of
 
     %% Entity: PUBLICATION
     PUBLICATION {
@@ -125,8 +125,8 @@ erDiagram
         string TABLE_OF_TABLES
     }
 
-    %% ENUM: SemanticNodeType (Content Nodes)
-    SemanticNodeType {
+    %% ENUM: ContentNodeType (Content Nodes)
+    ContentNodeType {
         string ABSTRACT
         string BLOCK_QUOTATION
         string BIBLIOGRAPHIC_ENTRY
@@ -160,12 +160,12 @@ erDiagram
         string CAPTION "Embed the original caption (for figures, tables)"
     }
 
-    %% ENTITY: SEMANTIC_NODE
-    SEMANTIC_NODE {
+    %% ENTITY: CONTENT_NODE
+    CONTENT_NODE {
         string id PK
         string document_id FK
         string parent_component_id FK "FK to the DOCUMENT_COMPONENT that contains this node"
-        SemanticNodeType semantic_node_type
+        ContentNodeType content_node_type
         text content "The primary, cleaned text content of the node"
         string storage_url "For binary content like images"
         string caption "The original caption from the source (for figures, tables)"
@@ -208,5 +208,5 @@ erDiagram
     classDef mainTable fill:#e6f3ff,stroke:#0066cc
 
     class DocumentComponentType,RelationType enumType
-    class PUBLICATION,DOCUMENT,DOCUMENT_COMPONENT,SEMANTIC_NODE,RELATION,EMBEDDING mainTable
+    class PUBLICATION,DOCUMENT,DOCUMENT_COMPONENT,CONTENT_NODE,RELATION,EMBEDDING mainTable
 ```
