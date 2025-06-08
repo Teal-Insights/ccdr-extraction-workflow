@@ -33,6 +33,7 @@ erDiagram
     DOCUMENT_COMPONENT ||--o{ CONTENT_NODE : contains
     CONTENT_NODE      ||--o{ RELATION : source_of
     CONTENT_NODE      ||--o{ RELATION : target_of
+    CONTENT_NODE      ||--o{ EMBEDDING : has
 
     %% Entity: PUBLICATION
     PUBLICATION {
