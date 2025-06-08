@@ -65,11 +65,13 @@ graph TB
 erDiagram
     %% Relationship lines
     PUBLICATION ||--o{ DOCUMENT : has
-    DOCUMENT ||--|{ CONTENT_NODE : contains
-    CONTENT_NODE ||--o{ RELATION : source_of
-    CONTENT_NODE ||--o{ RELATION : target_of
-    CONTENT_NODE ||--o{ EMBEDDING : has
-    
+    DOCUMENT ||--|{ SEMANTIC_NODE : contains
+    DOCUMENT ||--|{ DOCUMENT_COMPONENT : contains
+    DOCUMENT_COMPONENT ||--o{ DOCUMENT_COMPONENT : "contains (self-reference)"
+    DOCUMENT_COMPONENT ||--o{ SEMANTIC_NODE : contains
+    SEMANTIC_NODE      ||--o{ RELATION : source_of
+    SEMANTIC_NODE      ||--o{ RELATION : target_of
+
     %% Entity: PUBLICATION
     PUBLICATION {
         string id PK "Unique publication identifier (pub_XXX)"
@@ -83,65 +85,100 @@ erDiagram
         string uri "Persistent handle.net URI that redirects to source_url"
     }
 
+    %% ENUM: DocumentType
+    DocumentType {
+        string MAIN "The main document"
+        string SUPPLEMENTAL "A supplemental document"
+        string OTHER "Other document type"
+    }
+
     %% ENTITY: DOCUMENT
     DOCUMENT {
         string id PK "Unique document identifier (dl_XXX)"
-        string type "Type of document (MAIN, SUPPLEMENTAL, OTHER)"
+        string publication_id FK "FK to the PUBLICATION that contains this document"
+        DocumentType type "Type of document"
         string download_url "URL to the source document download endpoint"
         string description "Description of the document"
         string mime_type "MIME type of the document"
         string charset "Character set of the document"
         string storage_url "URL to the document storage bucket (s3://...)"
         bigint file_size "Size of the document in bytes"
+        string language "Language of the document"
+        string version "Version of the document"
     }
 
-    %% ENUM: DocumentComponentType
-    DocumentComponentType {
-        string DOCUMENT
-        string PART
-        string CHAPTER
-        string SECTION
-        string PARAGRAPH
-        string HEADER
+    %% ENUM: ComponentType (Structural Nodes)
+    ComponentType {
+        string ACKNOWLEDGEMENTS
+        string APPENDIX
+        string BIBLIOGRAPHY
+        string DEDICATION
         string FOOTER
-        string ENDNOTE_SECTION
-        string TABLE
-        string FIGURE
-        string CAPTION
+        string FRONT_MATTER
+        string HEADER
+        string INDEX
         string LIST
-        string LIST_ITEM
-        string FOOTNOTE
-        string BIBLIOGRAPHIC_ENTRY
-        string TITLE
-        string SUBTITLE
-        string FORMULA
+        string NOTES_SECTION
+        string TABLE_OF_BOXES
+        string TABLE_OF_CONTENTS
+        string TABLE_OF_FIGURES
+        string TABLE_OF_TABLES
     }
 
-    %% ENTITY: CONTENT_NODE
-    CONTENT_NODE {
+    %% ENUM: SemanticNodeType (Content Nodes)
+    SemanticNodeType {
+        string ABSTRACT
+        string BLOCK_QUOTATION
+        string BIBLIOGRAPHIC_ENTRY
+        string CAPTION
+        string FIGURE
+        string FORMULA
+        string LIST_ITEM
+        string NOTE
+        string PARAGRAPH
+        string PAGE_NUMBER
+        string SUBTITLE
+        string TABLE
+        string TEXT_BOX
+        string TITLE
+    }
+
+    %% ENTITY: DOCUMENT_COMPONENT (The Containers/Structure)
+    DOCUMENT_COMPONENT {
         string id PK
         string document_id FK
-        text raw_content
-        text content
-        string storage_url
-        
-        %% Semantic & Descriptive Fields
-        DocumentComponentType doco_type
+        ComponentType component_type "The type of structural container"
+        string title "The heading/title of this component, e.g., 'Chapter 1: Introduction'"
+        string parent_component_id FK "Self-referencing FK to build the hierarchy"
+        int sequence_in_parent "Order of this component within its parent"
+    }
+
+    %% ENUM: EmbeddingSource
+    EmbeddingSource {
+        string TEXT_CONTENT "Embed the primary text content"
+        string DESCRIPTION  "Embed the AI-generated description (for tables, figures)"
+        string CAPTION "Embed the original caption (for figures, tables)"
+    }
+
+    %% ENTITY: SEMANTIC_NODE
+    SEMANTIC_NODE {
+        string id PK
+        string document_id FK
+        string parent_component_id FK "FK to the DOCUMENT_COMPONENT that contains this node"
+        SemanticNodeType semantic_node_type
+        text content "The primary, cleaned text content of the node"
+        string storage_url "For binary content like images"
         string caption "The original caption from the source (for figures, tables)"
-        string description "AI-generated summary/description (for tables, figures)"
-        
-        %% Ordering & Sequencing
-        int sequence_in_parent
-        decimal sequence_in_document
-        
-        %% Positional Data
+        string description "AI-generated summary/description (for figures, tables)"
+        EmbeddingSource embedding_source "Which field to use for the vector embedding"
+        int sequence_in_parent_major "Order of this chunk within its parent component"
+        int sequence_in_parent_minor "Zero unless the node is a footnote or sidebar, in which case it indicates reading order among these supplementary nodes"
         jsonb positional_data "[{page_pdf, page_logical, char_range_start, char_range_end, bounding_box}, ...]"
     }
 
-    %% ENUM: RelationType
+    %% ENUM: RelationType (For non-hierarchical links)
     RelationType {
-        string CONTAINS "A parent contains a child (primary hierarchy)"
-        string REFERENCES_FOOTNOTE "Text references a footnote"
+        string REFERENCES_NOTE "Text references a footnote or endnote"
         string REFERENCES_CITATION "Text references a bibliographic entry"
         string IS_SUPPLEMENTED_BY "A node is supplemented by another node (e.g., a sidebar or legend)"
         string CONTINUES "A node continues from a previous one (e.g., across sections)"
@@ -153,9 +190,8 @@ erDiagram
         string id PK "Unique relation identifier (rel_XXX)"
         string source_node_id FK "The origin node of the relationship"
         string target_node_id FK "The destination node of the relationship"
-        RelationType relation_type "The semantic type of the relationship"
+        RelationType relation_type
         string marker_text "Optional text for the relation, e.g., '1' for a footnote or '(Author, 2025)' for a citation"
-        int sequence_in_source "Optional sequence if a source has multiple relations of the same type"
     }
 
     %% ENTITY: EMBEDDING
@@ -172,5 +208,5 @@ erDiagram
     classDef mainTable fill:#e6f3ff,stroke:#0066cc
 
     class DocumentComponentType,RelationType enumType
-    class PUBLICATION,DOCUMENT,CONTENT_NODE,RELATION,EMBEDDING mainTable
+    class PUBLICATION,DOCUMENT,DOCUMENT_COMPONENT,SEMANTIC_NODE,RELATION,EMBEDDING mainTable
 ```
