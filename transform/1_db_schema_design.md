@@ -72,34 +72,50 @@ erDiagram
 
     %% ENUM: ComponentType (Structural Nodes)
     ComponentType {
+        string ABSTRACT
         string ACKNOWLEDGEMENTS
         string APPENDIX
+        string BACK_MATTER
         string BIBLIOGRAPHY
+        string BODY_MATTER
+        string CHAPTER
+        string CONCLUSION
+        string COPYRIGHT_NOTICE
         string DEDICATION
+        string EPILOGUE
+        string EXECUTIVE_SUMMARY
         string FOOTER
+        string FOREWORD
         string FRONT_MATTER
         string HEADER
         string INDEX
+        string INTRODUCTION
         string LIST
+        string LIST_OF_BOXES
+        string LIST_OF_TABLES
+        string LIST_OF_FIGURES
         string NOTES_SECTION
-        string TABLE_OF_BOXES
+        string PART
+        string PREFACE
+        string SECTION
         string TABLE_OF_CONTENTS
-        string TABLE_OF_FIGURES
-        string TABLE_OF_TABLES
+        string TITLE_PAGE
     }
 
     %% ENUM: ContentNodeType (Content Nodes)
     ContentNodeType {
-        string ABSTRACT
         string BLOCK_QUOTATION
         string BIBLIOGRAPHIC_ENTRY
         string CAPTION
         string FIGURE
         string FORMULA
+        string HEADING
         string LIST_ITEM
         string NOTE
         string PARAGRAPH
         string PAGE_NUMBER
+        string STANZA
+        string SUBHEADING
         string SUBTITLE
         string TABLE
         string TEXT_BOX
@@ -114,6 +130,7 @@ erDiagram
         string title "The heading/title of this component, e.g., 'Chapter 1: Introduction'"
         string parent_component_id FK "Self-referencing FK to build the hierarchy"
         int sequence_in_parent "Order of this component within its parent"
+        int4range page_range "Page range of the component (inclusive)"
     }
 
     %% ENUM: EmbeddingSource
@@ -136,7 +153,7 @@ erDiagram
         EmbeddingSource embedding_source "Which field to use for the vector embedding"
         int sequence_in_parent_major "Order of this chunk within its parent component"
         int sequence_in_parent_minor "Zero unless the node is a footnote or sidebar, in which case it indicates reading order among these supplementary nodes"
-        jsonb positional_data "[{page_pdf, page_logical, char_range_start, char_range_end, bounding_box}, ...]"
+        jsonb positional_data "[{page_pdf, page_logical, bounding_box}, ...]"
     }
 
     %% ENUM: RelationType (For non-hierarchical links)
