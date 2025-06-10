@@ -110,38 +110,50 @@ erDiagram
 
     %% ENUM: ComponentType (Structural Nodes)
     ComponentType {
-        string ABSTRACT
-        string ACKNOWLEDGEMENTS
-        string APPENDIX
-        string BACK_MATTER
-        string BIBLIOGRAPHY
-        string BODY_MATTER
-        string CHAPTER
-        string CONCLUSION
-        string COPYRIGHT_NOTICE
-        string DEDICATION
-        string EPILOGUE
-        string EXECUTIVE_SUMMARY
-        string FOOTER
-        string FOREWORD
+        %% Top-level components
         string FRONT_MATTER
-        string HEADER
-        string INDEX
-        string INTRODUCTION
+        string BODY_MATTER
+        string BACK_MATTER
+
+        %% Generic sub-components
+        string CONTAINER
+        string SECTION
         string LIST
+
+        %% Containers
+        string COPYRIGHT_PAGE
+        string FOOTER
+        string HEADER
+        string TEXT_BOX
+        string TITLE_PAGE
+
+        %% Lists
+        string BIBLIOGRAPHY
         string LIST_OF_BOXES
         string LIST_OF_TABLES
         string LIST_OF_FIGURES
         string NOTES_SECTION
+        string TABLE_OF_CONTENTS
+
+        %% Sections
+        string ABSTRACT
+        string ACKNOWLEDGEMENTS
+        string APPENDIX
+        string CHAPTER
+        string CONCLUSION
+        string DEDICATION
+        string EPILOGUE
+        string EXECUTIVE_SUMMARY
+        string FOREWORD
+        string INDEX
+        string INTRODUCTION
         string PART
         string PREFACE
-        string SECTION
-        string TABLE_OF_CONTENTS
-        string TITLE_PAGE
     }
 
     %% ENUM: ContentNodeType (Content Nodes)
     ContentNodeType {
+        string AUTHOR
         string BLOCK_QUOTATION
         string BIBLIOGRAPHIC_ENTRY
         string CAPTION
@@ -156,7 +168,6 @@ erDiagram
         string SUBHEADING
         string SUBTITLE
         string TABLE
-        string TEXT_BOX
         string TITLE
     }
 
