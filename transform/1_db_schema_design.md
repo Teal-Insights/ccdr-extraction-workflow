@@ -140,7 +140,8 @@ erDiagram
         ComponentType component_type "The type of structural container"
         string title "The heading/title of this component, e.g., 'Chapter 1: Introduction'"
         string parent_component_id FK "Self-referencing FK to build the hierarchy"
-        int sequence_in_parent "Order of this component within its parent"
+        int sequence_in_parent_major "Order of this component within its parent"
+        int sequence_in_parent_minor "Null unless the component is a header or footer, in which case it indicates reading order among these supplementary components"
         int4range page_range "Page range of the component (inclusive)"
     }
 
@@ -163,7 +164,7 @@ erDiagram
         string description "AI-generated summary/description (for figures, tables)"
         EmbeddingSource embedding_source "Which field to use for the vector embedding"
         int sequence_in_parent_major "Order of this chunk within its parent component"
-        int sequence_in_parent_minor "Zero unless the node is a footnote or sidebar, in which case it indicates reading order among these supplementary nodes"
+        int sequence_in_parent_minor "Null unless the node is a footnote or sidebar, in which case it indicates reading order among these supplementary nodes"
         jsonb positional_data "[{page_pdf, page_logical, bounding_box}, ...]"
     }
 
@@ -220,6 +221,7 @@ erDiagram
     * On initial ingestion (before we have the document components), we will use `CONTINUES` relations to order the nodes by their logical reading order.
     * After ingesting the semantic nodes and creating the document components, we can traverse `CONTINUES` relations to enrich the data with `sequence_in_parent` values for faster querying.
     * Primary content related by `CONTINUES` will use integer sequence numbers, while sidebars and text boxes with `IS_SUPPLEMENTED_BY` or footnotes with `REFERENCES_NOTE` will use the sequence number of the referencing node with a minor sequence number to indicate reading order among the supplementary nodes. We can then optionally include these or not after the referencing node when linearly rendering the text in a UI.
+    * I'm actually fine omitting the `HEADER` and `FOOTER` components (which cost extract to output and store) as long as we capture the logical page numbers in the content nodes. But if we do capture them, they will primarily be children of `FRONT_MATTER`, `BODY_MATTER`, and `BACK_MATTER` components (though they can also be children of other components if those components are paginated independently). A header or footer will take the major sequence number of the nearest sibling and a minor sequence number indicating the order of appearance in the parent.
     * We will sequence endnotes, chapter notes, and bibliographic entries at their original positions in the document, on the theory that the author or publisher has already decided the best place for them.
     * We could probably discard the `CONTINUES` relations after we have the document components, since they will be redundant with the `sequence_in_parent` field, and Gemini says DFS is more performant for linearly rendering the document than finding the first node and then following the linked list. (We could run a benchmark to confirm this.)
 
