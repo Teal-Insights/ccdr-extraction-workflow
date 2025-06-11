@@ -225,6 +225,11 @@ erDiagram
     * We will sequence endnotes, chapter notes, and bibliographic entries at their original positions in the document, on the theory that the author or publisher has already decided the best place for them.
     * We could probably discard the `CONTINUES` relations after we have the document components, since they will be redundant with the `sequence_in_parent` field, and Gemini says DFS is more performant for linearly rendering the document than finding the first node and then following the linked list. (We could run a benchmark to confirm this.)
 
+* **Markdown Formatting:**
+    * I'm a bit torn on how to handle markdown formatting, particularly bold, italic, and header text. I *think* it might be optimal to leave headings unformatted, and then use the hierarchy of document components at runtime to add the appropriate formatting. That way we don't make mistakes in adding such formatting during ingestion, and if we edit the document component graph, we don't also have to edit the markdown. We could perhaps use a Postgres function to add the appropriate formatting to markdown headings based on the component hierarchy. 
+    * This gets a bit dicey in that it adds a lot of complexity to the ingestion process and the component hierarchy, but it makes things easier at query time. I will have to prep some sample data using both approaches to see what's actually feasible for ingestion.
+    * We can definitely hardcode the markdown formatting for any other bold or italic text in the markdown that isn't just part of a heading style. 
+
 ## **4. Unlocking Advanced RAG Capabilities**
 
 This schema is explicitly designed to enable more intelligent RAG:
