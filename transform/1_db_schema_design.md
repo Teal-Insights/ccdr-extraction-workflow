@@ -160,7 +160,6 @@ erDiagram
         ContentNodeType content_node_type
         text content "The primary, cleaned text content of the node"
         string storage_url "For binary content like images"
-        string caption "The original caption from the source (for figures, tables)"
         string description "AI-generated summary/description (for figures, tables)"
         EmbeddingSource embedding_source "Which field to use for the vector embedding"
         int sequence_in_parent_major "Order of this chunk within its parent component"
@@ -172,6 +171,7 @@ erDiagram
     RelationType {
         string REFERENCES_NOTE "Text references a footnote or endnote"
         string REFERENCES_CITATION "Text references a bibliographic entry"
+        string IS_CAPTIONED_BY "A node is a caption for another node"
         string IS_SUPPLEMENTED_BY "A node is supplemented by another node (e.g., a sidebar or legend)"
         string CONTINUES "A node continues from a previous one (e.g., across sections)"
         string CROSS_REFERENCES "A node references another arbitrary node"
