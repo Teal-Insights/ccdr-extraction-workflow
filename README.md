@@ -1,12 +1,6 @@
 # CCDR Extraction Workflow
 
-This directory contains the complete workflow for extracting World Bank Country and Climate Development Reports (CCDRs). It is part of the data preparation pipeline for the [CCDR Explorer](https://github.com/Teal-Insights/nature-finance-rag-client), created by Teal Insights for Nature Finance.
-
-Note: it's important to keep the database schema in sync with the client. You can run a comparison from the root of this repo with:
-
-```bash
-curl -s https://raw.githubusercontent.com/Teal-Insights/nature-finance-rag-api/refs/heads/main/db/schema.py extract/schema.py | diff - local/file
-```
+This directory contains the complete workflow for extracting World Bank Country and Climate Development Reports (CCDRs). It is part of the data preparation pipeline for the [CCDR Explorer](https://github.com/Teal-Insights/ccdr-explorer-client), created by Teal Insights for Nature Finance.
 
 ## Quick Start
 

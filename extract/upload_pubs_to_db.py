@@ -41,10 +41,10 @@ def parse_date(date_str: str) -> date:
     
     raise ValueError(f"Unable to parse date: {date_str}")
 
-def create_publication(pub_data: Dict[str, Any]) -> Publication:
-    """Create a Publication object from JSON data."""
-    return Publication(
-        id=pub_data["id"],
+def create_publication_with_documents(pub_data: Dict[str, Any]) -> Publication:
+    """Create a Publication object with its associated documents from JSON data."""
+    # Create the publication (without ID - will be auto-generated)
+    publication = Publication(
         title=pub_data["title"],
         abstract=pub_data.get("abstract"),  # Using get() for optional fields
         citation=pub_data["citation"],
@@ -54,14 +54,12 @@ def create_publication(pub_data: Dict[str, Any]) -> Publication:
         source_url=pub_data["source_url"],
         uri=pub_data["uri"]
     )
-
-def create_documents(pub_data: Dict[str, Any], publication_id: str) -> List[Document]:
-    """Create Document objects from JSON data."""
+    
+    # Create documents and add them to the publication's documents list
     documents = []
     for dl in pub_data["downloadLinks"]:
         doc = Document(
-            id=dl["id"],
-            publication_id=publication_id,
+            # No id or publication_id - these will be auto-generated and set by the relationship
             type=DocumentType(dl["type"].upper()),
             download_url=dl["url"],
             description=dl["text"].strip(),
@@ -71,45 +69,46 @@ def create_documents(pub_data: Dict[str, Any], publication_id: str) -> List[Docu
             # file_size will be populated later during processing
         )
         documents.append(doc)
-    return documents
+    
+    # Assign documents to the publication
+    publication.documents = documents
+    
+    return publication
 
-def publication_exists(session: Session, publication_id: str) -> bool:
-    """Check if a publication already exists in the database."""
-    statement = select(Publication).where(Publication.id == publication_id)
+def publication_exists_by_uri(session: Session, uri: str) -> bool:
+    """Check if a publication already exists in the database by URI."""
+    statement = select(Publication).where(Publication.uri == uri)
     return session.exec(statement).first() is not None
 
-def verify_publication_upload(session: Session, pub_data: Dict[str, Any]) -> Tuple[bool, str]:
+def verify_publication_upload(session: Session, pub_data: Dict[str, Any], db_publication: Publication) -> Tuple[bool, str]:
     """Verify that a publication was uploaded correctly."""
-    pub_id = pub_data["id"]
-    statement = select(Publication).where(Publication.id == pub_id)
-    db_pub = session.exec(statement).first()
-    
-    if not db_pub:
-        return False, f"Publication {pub_id} not found in database"
-    
     # Verify core fields match
-    if db_pub.title != pub_data["title"]:
-        return False, f"Title mismatch for publication {pub_id}"
-    if db_pub.citation != pub_data["citation"]:
-        return False, f"Citation mismatch for publication {pub_id}"
-    if db_pub.uri != pub_data["uri"]:
-        return False, f"URI mismatch for publication {pub_id}"
+    if db_publication.title != pub_data["title"]:
+        return False, f"Title mismatch for publication {db_publication.id}"
+    if db_publication.citation != pub_data["citation"]:
+        return False, f"Citation mismatch for publication {db_publication.id}"
+    if db_publication.uri != pub_data["uri"]:
+        return False, f"URI mismatch for publication {db_publication.id}"
     
     return True, "Publication verified successfully"
 
-def verify_documents_upload(session: Session, pub_data: Dict[str, Any]) -> Tuple[bool, str]:
+def verify_documents_upload(session: Session, pub_data: Dict[str, Any], db_publication: Publication) -> Tuple[bool, str]:
     """Verify that documents were uploaded correctly."""
-    pub_id = pub_data["id"]
-    statement = select(Document).where(Document.publication_id == pub_id)
+    statement = select(Document).where(Document.publication_id == db_publication.id)
     db_docs = session.exec(statement).all()
     
-    source_doc_ids = {dl["id"] for dl in pub_data["downloadLinks"]}
-    db_doc_ids = {doc.id for doc in db_docs}
+    source_doc_count = len(pub_data["downloadLinks"])
+    db_doc_count = len(db_docs)
     
-    if source_doc_ids != db_doc_ids:
-        missing = source_doc_ids - db_doc_ids
-        extra = db_doc_ids - source_doc_ids
-        return False, f"Document mismatch for publication {pub_id}. Missing: {missing}, Extra: {extra}"
+    if source_doc_count != db_doc_count:
+        return False, f"Document count mismatch for publication {db_publication.id}. Expected: {source_doc_count}, Found: {db_doc_count}"
+    
+    # Verify document details match
+    source_download_urls = {dl["url"] for dl in pub_data["downloadLinks"]}
+    db_download_urls = {doc.download_url for doc in db_docs}
+    
+    if source_download_urls != db_download_urls:
+        return False, f"Document URLs don't match for publication {db_publication.id}"
     
     return True, "Documents verified successfully"
 
@@ -127,35 +126,34 @@ def upload_data(json_path: str, skip_existing: bool = True) -> Dict[str, int]:
     with Session(engine) as session:
         for pub_data in publications_data:
             try:
-                pub_id = pub_data.get('id', 'unknown')
+                source_id = pub_data.get('id', 'unknown')
+                uri = pub_data.get('uri', 'unknown')
                 
                 # Skip if publication exists and skip_existing is True
-                if skip_existing and publication_exists(session, pub_id):
-                    print(f"⏭ Skipping existing publication {pub_id}")
+                if skip_existing and publication_exists_by_uri(session, uri):
+                    print(f"⏭ Skipping existing publication {source_id} (URI: {uri})")
                     stats["skipped"] += 1
                     continue
                 
-                # Create and add publication
-                publication = create_publication(pub_data)
+                # Create publication with its documents
+                publication = create_publication_with_documents(pub_data)
+                
+                # Add to session and commit
                 session.add(publication)
-                
-                # Create and add documents
-                documents = create_documents(pub_data, publication.id)
-                for doc in documents:
-                    session.add(doc)
-                
-                # Commit each publication and its documents
                 session.commit()
                 
+                # Refresh to get the auto-generated IDs
+                session.refresh(publication)
+                
                 # Verify the upload
-                pub_verified, pub_msg = verify_publication_upload(session, pub_data)
-                docs_verified, docs_msg = verify_documents_upload(session, pub_data)
+                pub_verified, pub_msg = verify_publication_upload(session, pub_data, publication)
+                docs_verified, docs_msg = verify_documents_upload(session, pub_data, publication)
                 
                 if pub_verified and docs_verified:
-                    print(f"✓ Successfully uploaded and verified publication {publication.id} with {len(documents)} documents")
+                    print(f"✓ Successfully uploaded and verified publication {publication.id} (source: {source_id}) with {len(publication.documents)} documents")
                     stats["success"] += 1
                 else:
-                    print(f"⚠ Upload validation failed for {pub_id}:")
+                    print(f"⚠ Upload validation failed for {source_id} (DB ID: {publication.id}):")
                     if not pub_verified:
                         print(f"  - Publication: {pub_msg}")
                     if not docs_verified:
@@ -198,6 +196,7 @@ if __name__ == "__main__":
             
             # Get and print the related Publication
             pub = result.publication
-            print(pub.model_dump_json())
+            if pub:
+                print(pub.model_dump_json())
         else:
             print("Something went wrong; no documents found in the database.")

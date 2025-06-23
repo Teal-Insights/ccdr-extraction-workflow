@@ -4,7 +4,7 @@ from enum import Enum
 from dotenv import load_dotenv
 from sqlmodel import Field, Relationship, SQLModel, Column
 from pydantic import HttpUrl, field_validator
-from sqlalchemy.dialects.postgresql import ARRAY, FLOAT, JSONB
+from sqlalchemy.dialects.postgresql import ARRAY, FLOAT, JSONB, VARCHAR
 
 # Load environment variables
 load_dotenv(override=True)
@@ -16,31 +16,108 @@ class DocumentType(str, Enum):
     OTHER = "OTHER"
 
 class NodeType(str, Enum):
-    HEADING = "HEADING"
-    PARAGRAPH = "PARAGRAPH"
-    TABLE = "TABLE"
-    IMAGE = "IMAGE"
+    TEXT_NODE = "TEXT_NODE"
+    ELEMENT_NODE = "ELEMENT_NODE"
 
-# Pydantic model for bounding box
-class BoundingBox(SQLModel):
-    x1: float
-    y1: float
-    x2: float
-    y2: float
+class TagName(str, Enum):
+    HEADER = "HEADER"
+    MAIN = "MAIN"
+    FOOTER = "FOOTER"
+    FIGURE = "FIGURE"
+    FIGCAPTION = "FIGCAPTION"
+    TABLE = "TABLE"
+    TH = "TH"
+    TR = "TR"
+    TD = "TD"
+    CAPTION = "CAPTION"
+    TITLE = "TITLE"
+    SECTION = "SECTION"
+    NAV = "NAV"
+    ASIDE = "ASIDE"
+    P = "P"
+    UL = "UL"
+    OL = "OL"
+    LI = "LI"
+    H1 = "H1"
+    H2 = "H2"
+    H3 = "H3"
+    H4 = "H4"
+    H5 = "H5"
+    H6 = "H6"
+    I = "I"
+    B = "B"
+    U = "U"
+    S = "S"
+    SUP = "SUP"
+    SUB = "SUB"
+    A = "A"
+    IMG = "IMG"
+    MATH = "MATH"
+    CODE = "CODE"
+    CITE = "CITE"
+    BLOCKQUOTE = "BLOCKQUOTE"
+
+class SectionType(str, Enum):
+    ABSTRACT = "ABSTRACT"
+    ACKNOWLEDGEMENTS = "ACKNOWLEDGEMENTS"
+    APPENDIX = "APPENDIX"
+    BIBLIOGRAPHY = "BIBLIOGRAPHY"
+    CHAPTER = "CHAPTER"
+    CONCLUSION = "CONCLUSION"
+    COPYRIGHT_PAGE = "COPYRIGHT_PAGE"
+    DEDICATION = "DEDICATION"
+    EPILOGUE = "EPILOGUE"
+    EXECUTIVE_SUMMARY = "EXECUTIVE_SUMMARY"
+    FOOTER = "FOOTER"
+    FOREWORD = "FOREWORD"
+    HEADER = "HEADER"
+    INDEX = "INDEX"
+    INTRODUCTION = "INTRODUCTION"
+    LIST_OF_BOXES = "LIST_OF_BOXES"
+    LIST_OF_FIGURES = "LIST_OF_FIGURES"
+    LIST_OF_TABLES = "LIST_OF_TABLES"
+    NOTES_SECTION = "NOTES_SECTION"
+    PART = "PART"
+    PREFACE = "PREFACE"
+    PROLOGUE = "PROLOGUE"
+    SECTION = "SECTION"
+    STANZA = "STANZA"
+    SUBSECTION = "SUBSECTION"
+    TABLE_OF_CONTENTS = "TABLE_OF_CONTENTS"
+    TEXT_BOX = "TEXT_BOX"
+    TITLE_PAGE = "TITLE_PAGE"
+
+class EmbeddingSource(str, Enum):
+    TEXT_CONTENT = "TEXT_CONTENT"
+    DESCRIPTION = "DESCRIPTION"
+    CAPTION = "CAPTION"
+
+class RelationType(str, Enum):
+    REFERENCES_NOTE = "REFERENCES_NOTE"
+    REFERENCES_CITATION = "REFERENCES_CITATION"
+    IS_CAPTIONED_BY = "IS_CAPTIONED_BY"
+    IS_SUPPLEMENTED_BY = "IS_SUPPLEMENTED_BY"
+    CONTINUES = "CONTINUES"
+    CROSS_REFERENCES = "CROSS_REFERENCES"
+
+# Pydantic model for positional data
+class PositionalData(SQLModel):
+    page_pdf: int
+    page_logical: Optional[int] = None
+    bbox: Dict[str, float]  # {x1, y1, x2, y2}
 
     def dict(self, *args, **kwargs) -> Dict[str, Any]:
         return {
-            "x1": self.x1,
-            "y1": self.y1,
-            "x2": self.x2,
-            "y2": self.y2
+            "page_pdf": self.page_pdf,
+            "page_logical": self.page_logical,
+            "bbox": self.bbox
         }
 
 # Define the models
 class Publication(SQLModel, table=True):
     __table_args__ = {'comment': 'Contains publication metadata and relationships to documents'}
     
-    id: str = Field(primary_key=True, max_length=50, index=True)
+    id: Optional[int] = Field(default=None, primary_key=True, index=True)
     title: str = Field(max_length=500)
     abstract: Optional[str] = None
     citation: str
@@ -63,10 +140,10 @@ class Publication(SQLModel, table=True):
 
 
 class Document(SQLModel, table=True):
-    __table_args__ = {'comment': 'Contains document metadata and relationships to content nodes'}
+    __table_args__ = {'comment': 'Contains document metadata and relationships to nodes'}
     
-    id: str = Field(primary_key=True, max_length=50, index=True)
-    publication_id: str = Field(foreign_key="publication.id", index=True)
+    id: Optional[int] = Field(default=None, primary_key=True, index=True)
+    publication_id: Optional[int] = Field(default=None, foreign_key="publication.id", index=True)
     type: DocumentType
     download_url: str = Field(max_length=500)
     description: str
@@ -74,6 +151,8 @@ class Document(SQLModel, table=True):
     charset: str = Field(max_length=50)
     storage_url: Optional[str] = Field(default=None, max_length=500)
     file_size: Optional[int] = None
+    language: Optional[str] = Field(default=None, max_length=10)
+    version: Optional[str] = Field(default=None, max_length=50)
     
     # Validator for URL
     @field_validator('download_url')
@@ -92,30 +171,50 @@ class Document(SQLModel, table=True):
         return v
 
     # Relationships
-    publication: Publication = Relationship(back_populates="documents")
-    content_nodes: List["ContentNode"] = Relationship(back_populates="document")
+    publication: Optional[Publication] = Relationship(back_populates="documents")
+    nodes: List["Node"] = Relationship(back_populates="document")
 
 
-class ContentNode(SQLModel, table=True):
-    __tablename__ = "content_node" # type: ignore
-    __table_args__ = {'comment': 'Contains hierarchical document content with relationships to embeddings and footnotes'}
+class Node(SQLModel, table=True):
+    __table_args__ = {'comment': 'Unified DOM node structure for both element and text nodes'}
     
-    id: str = Field(primary_key=True, max_length=50, index=True)
-    document_id: str = Field(foreign_key="document.id", index=True)
-    parent_node_id: Optional[str] = Field(default=None, foreign_key="content_node.id", index=True)
+    id: Optional[int] = Field(default=None, primary_key=True, index=True)
+    document_id: Optional[int] = Field(default=None, foreign_key="document.id", index=True)
     node_type: NodeType
-    raw_content: Optional[str] = None
-    content: Optional[str] = None
-    storage_url: Optional[str] = Field(default=None, max_length=500)
-    caption: Optional[str] = None
-    description: Optional[str] = None
+    tag_name: Optional[TagName] = Field(default=None, index=True)
+    section_type: Optional[SectionType] = Field(default=None, index=True)
+    parent_id: Optional[int] = Field(default=None, foreign_key="node.id", index=True)
     sequence_in_parent: int
-    sequence_in_document: int = Field(index=True)
-    start_page_pdf: int
-    end_page_pdf: int
-    start_page_logical: str
-    end_page_logical: str
-    bounding_box: Dict[str, Any] = Field(sa_column=Column(JSONB))
+    positional_data: List[Dict[str, Any]] = Field(default_factory=list, sa_column=Column(JSONB))
+
+    # Relationships
+    document: Optional[Document] = Relationship(back_populates="nodes")
+    parent: Optional["Node"] = Relationship(
+        back_populates="children",
+        sa_relationship_kwargs={"remote_side": "Node.id"}
+    )
+    children: List["Node"] = Relationship(back_populates="parent")
+    content_data: Optional["ContentData"] = Relationship(back_populates="node")
+    source_relations: List["Relation"] = Relationship(
+        back_populates="source_node",
+        sa_relationship_kwargs={"foreign_keys": "Relation.source_node_id"}
+    )
+    target_relations: List["Relation"] = Relationship(
+        back_populates="target_node",
+        sa_relationship_kwargs={"foreign_keys": "Relation.target_node_id"}
+    )
+
+
+class ContentData(SQLModel, table=True):
+    __table_args__ = {'comment': 'Contains actual content for content-bearing nodes'}
+    
+    id: Optional[int] = Field(default=None, primary_key=True, index=True)
+    node_id: int = Field(foreign_key="node.id", index=True, unique=True)
+    text_content: Optional[str] = None
+    storage_url: Optional[str] = Field(default=None, max_length=500)
+    description: Optional[str] = None
+    caption: Optional[str] = None
+    embedding_source: EmbeddingSource
 
     # Validator for optional URL
     @field_validator('storage_url')
@@ -127,28 +226,34 @@ class ContentNode(SQLModel, table=True):
         return v
 
     # Relationships
-    document: Document = Relationship(back_populates="content_nodes")
-    parent: Optional["ContentNode"] = Relationship(
-        back_populates="children",
-        sa_relationship_kwargs={"remote_side": "ContentNode.id"}
+    node: Node = Relationship(back_populates="content_data")
+    embeddings: List["Embedding"] = Relationship(back_populates="content_data")
+
+
+class Relation(SQLModel, table=True):
+    __table_args__ = {'comment': 'Contains non-hierarchical relationships between nodes'}
+
+    id: Optional[int] = Field(default=None, primary_key=True, index=True)
+    source_node_id: int = Field(foreign_key="node.id", index=True)
+    target_node_id: int = Field(foreign_key="node.id", index=True)
+    relation_type: RelationType
+
+    # Relationships
+    source_node: Node = Relationship(
+        back_populates="source_relations",
+        sa_relationship_kwargs={"foreign_keys": "Relation.source_node_id"}
     )
-    children: List["ContentNode"] = Relationship(back_populates="parent")
-    embeddings: List["Embedding"] = Relationship(back_populates="content_node")
-    referencing_footnotes: List["FootnoteReference"] = Relationship(
-        back_populates="referencing_node",
-        sa_relationship_kwargs={"foreign_keys": "FootnoteReference.referencing_node_id"}
-    )
-    definition_footnotes: List["FootnoteReference"] = Relationship(
-        back_populates="definition_node",
-        sa_relationship_kwargs={"foreign_keys": "FootnoteReference.definition_node_id"}
+    target_node: Node = Relationship(
+        back_populates="target_relations",
+        sa_relationship_kwargs={"foreign_keys": "Relation.target_node_id"}
     )
 
 
 class Embedding(SQLModel, table=True):
-    __table_args__ = {'comment': 'Contains vector embeddings for content nodes'}
+    __table_args__ = {'comment': 'Contains vector embeddings for content data'}
     
-    id: str = Field(primary_key=True, max_length=50, index=True)
-    node_id: str = Field(foreign_key="content_node.id", index=True)
+    id: Optional[int] = Field(default=None, primary_key=True, index=True)
+    content_data_id: Optional[int] = Field(default=None, foreign_key="contentdata.id", index=True)
     embedding_vector: List[float] = Field(
         sa_column=Column(ARRAY(FLOAT))
     )
@@ -156,25 +261,4 @@ class Embedding(SQLModel, table=True):
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     
     # Relationships
-    content_node: ContentNode = Relationship(back_populates="embeddings")
-
-
-class FootnoteReference(SQLModel, table=True):
-    __tablename__ = "footnote_reference" # type: ignore
-    __table_args__ = {'comment': 'Contains bidirectional footnote references between content nodes'}
-
-    id: str = Field(primary_key=True, max_length=50, index=True)
-    referencing_node_id: str = Field(foreign_key="content_node.id", index=True)
-    definition_node_id: str = Field(foreign_key="content_node.id", index=True)
-    marker_text: str = Field(max_length=50)
-    sequence_in_node: int
-
-    # Relationships
-    referencing_node: ContentNode = Relationship(
-        back_populates="referencing_footnotes",
-        sa_relationship_kwargs={"foreign_keys": "FootnoteReference.referencing_node_id"}
-    )
-    definition_node: ContentNode = Relationship(
-        back_populates="definition_footnotes",
-        sa_relationship_kwargs={"foreign_keys": "FootnoteReference.definition_node_id"}
-    )
+    content_data: Optional[ContentData] = Relationship(back_populates="embeddings")
