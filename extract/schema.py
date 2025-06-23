@@ -1,10 +1,10 @@
 from datetime import date, datetime, UTC
-from typing import List, Optional, Annotated, Dict, Any
+from typing import List, Optional, Dict, Any
 from enum import Enum
 from dotenv import load_dotenv
 from sqlmodel import Field, Relationship, SQLModel, Column
-from pydantic import HttpUrl, AnyUrl, field_validator
-from sqlalchemy.dialects.postgresql import ARRAY, FLOAT, JSONB, VARCHAR
+from pydantic import HttpUrl, field_validator
+from sqlalchemy.dialects.postgresql import ARRAY, FLOAT, JSONB
 
 # Load environment variables
 load_dotenv(override=True)

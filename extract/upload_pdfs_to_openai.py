@@ -49,6 +49,31 @@ async def get_vector_store(assistant_id: str, client: AsyncOpenAI) -> str | None
         logger.error(f"Error retrieving assistant {assistant_id}: {e_retrieve}")
         return None
 
+async def get_existing_files(vector_store_id: str, client: AsyncOpenAI) -> set[str]:
+    """Get a set of existing filenames in the vector store to avoid duplicates."""
+    existing_files = set()
+    try:
+        # List all files in the vector store
+        files_response = await client.vector_stores.files.list(vector_store_id=vector_store_id)
+        
+        # Extract filenames from the response
+        for file_obj in files_response.data:
+            # Get the file details to access the filename
+            try:
+                file_details = await client.files.retrieve(file_obj.id)
+                if file_details.filename:
+                    existing_files.add(file_details.filename)
+            except Exception as e:
+                logger.warning(f"Could not retrieve details for file {file_obj.id}: {e}")
+                continue
+        
+        logger.info(f"Found {len(existing_files)} existing files in vector store")
+        return existing_files
+    
+    except Exception as e:
+        logger.error(f"Error retrieving existing files from vector store: {e}")
+        return set()
+
 async def main():
     """Main function to find PDFs and upload them to the OpenAI vector store."""
     assistant_id = os.getenv("ASSISTANT_ID")
@@ -73,6 +98,9 @@ async def main():
 
     logger.info(f"Found vector store ID: {vector_store_id} for assistant {assistant_id}")
 
+    # Get existing files to avoid duplicates
+    existing_files = await get_existing_files(vector_store_id, client)
+
     # Find all PDF files in subdirectories of extract/data
     data_dir = Path("extract/data")
     pdf_files = list(data_dir.rglob("*.pdf"))
@@ -81,12 +109,31 @@ async def main():
         logger.info("No PDF files found in extract/data subdirectories. Nothing to upload.")
         return
 
-    logger.info(f"Found {len(pdf_files)} PDF files to upload.")
+    logger.info(f"Found {len(pdf_files)} PDF files locally.")
 
-    # Prepare file paths for upload
-    # upload_and_poll expects an iterable of FileTypes (e.g., Path objects or file-like objects)
-    files_to_upload = [p for p in pdf_files] # Pass Path objects directly
+    # Filter out files that already exist in the vector store
+    files_to_upload = []
+    skipped_files = []
+    
+    for pdf_file in pdf_files:
+        filename = pdf_file.name
+        if filename in existing_files:
+            skipped_files.append(pdf_file)
+            logger.debug(f"Skipping {filename} - already exists in vector store")
+        else:
+            files_to_upload.append(pdf_file)
 
+    logger.info(f"Files to upload: {len(files_to_upload)}")
+    logger.info(f"Files skipped (already exist): {len(skipped_files)}")
+
+    if not files_to_upload:
+        logger.info("All PDF files already exist in the vector store. Nothing to upload.")
+        return
+
+    # Log which files will be uploaded
+    logger.info("Files to be uploaded:")
+    for file_path in files_to_upload:
+        logger.info(f"  - {file_path.name}")
 
     try:
         logger.info("Starting file batch upload and polling...")
@@ -111,7 +158,6 @@ async def main():
             )
             for file_detail in files_in_batch.data:
                 logger.info(f"  File ID: {file_detail.id}, Status: {file_detail.status}")
-
 
     except Exception as e:
         logger.error(f"Error during file batch upload and polling: {e}")

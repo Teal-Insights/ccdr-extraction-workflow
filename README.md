@@ -1,241 +1,91 @@
-# Nature Finance RAG Database and API for working with IMF climate development reports
+# CCDR Extraction Workflow
 
-## Getting Started
+This directory contains the complete workflow for extracting World Bank Country and Climate Development Reports (CCDRs). It is part of the data preparation pipeline for the [CCDR Explorer](https://github.com/Teal-Insights/nature-finance-rag-client), created by Teal Insights for Nature Finance.
 
-1. Clone the repository with `git clone https://github.com/Teal-Insights/nature-finance-rag-api && cd nature-finance-rag-api`
-2. Run `npm install` to install the dependencies
-3. Run `docker compose up` to start the Postgres database
-4. Use `uv run -m module_name.script_name` to run the scripts
-    - Modules are meant to be run in this order: extract -> transform -> load
-    - Scripts are numbered to indicate the order they should be run in
-
-## Synchronization with the client
-
-This repository is the data ingestion pipeline for the [Nature Finance RAG Client](https://github.com/Teal-Insights/nature-finance-rag-client).
-
-It's important to keep the database schema in sync with the client. You can run a comparison from the root of this repo with:
+Note: it's important to keep the database schema in sync with the client. You can run a comparison from the root of this repo with:
 
 ```bash
-diff absolute/path/to/client/models.py load/schema.py
+curl -s https://raw.githubusercontent.com/Teal-Insights/nature-finance-rag-api/refs/heads/main/db/schema.py extract/schema.py | diff - local/file
 ```
 
-## RAG Implementation
+## Quick Start
 
-The text is chunked by line breaks, with a max chunk length of 2500 characters. This is very naive and should be improved.
+To run the complete extraction workflow:
 
-## ETL Architecture
-
-```mermaid
-graph TB
-    subgraph "Data Collection"
-        C["Cursor Agent<br>(Claude 3.7 Sonnet)"] <-- finds --> B["Data Sources<br>(Web/APIs)"]
-        C -- writes --> D["Extraction Scripts<br>(Node.js)"]
-        D <-- scrapes --> B
-        D --> F["Raw Data"]
-    end
-
-    subgraph "Data Processing"
-        F --> I["Chunking"]
-        I --> J["Annotation"]
-        J --> K["Embedding<br>(Google AI)"]
-        K --> L["Database Upsert<br>(Drizzle ORM)"]
-    end
-
-    subgraph "Database & Storage"
-        L --> M["PostgreSQL with pgvector"]
-        M -- Stores --> N["Publications<br>(citation information)"]
-        M -- Stores --> O["Documents<br>(PDF file information)"]
-        M -- Stores --> P["Content Nodes<br>(sections, paragraphs, tables, images)"]
-        M -- Stores --> Q["Embeddings<br>(vectorized data)"]
-        M -- Stores --> R["References<br>(for associating content nodes with notes)"]
-        
-        subgraph "S3 Storage Buckets"
-            S["Document Storage<br>(PDFs)"]
-            T["Content Node Storage<br>(images)"]
-        end
-        
-        O -- storage_url --> S
-        P -- storage_url --> T
-    end
+```bash
+uv run extract_ccdrs.py
 ```
 
-## Database Schema
+## Individual Steps
 
-```mermaid
-erDiagram
-    %% Relationship lines
-    PUBLICATION ||--o{ DOCUMENT : has
-    DOCUMENT ||--|{ CONTENT_NODE : contains
-    DOCUMENT ||--|{ DOCUMENT_COMPONENT : contains
-    DOCUMENT_COMPONENT ||--o{ DOCUMENT_COMPONENT : "contains (self-reference)"
-    DOCUMENT_COMPONENT ||--o{ CONTENT_NODE : contains
-    CONTENT_NODE      ||--o{ RELATION : source_of
-    CONTENT_NODE      ||--o{ RELATION : target_of
-    CONTENT_NODE      ||--o{ EMBEDDING : has
+The workflow consists of 9 steps that can also be run individually:
 
-    %% Entity: PUBLICATION
-    PUBLICATION {
-        string id PK "Unique publication identifier (pub_XXX)"
-        string title "Title of the publication"
-        text abstract "Optional publication abstract"
-        string citation "Formal citation"
-        string authors "Author(s) of the publication (comma separated)"
-        date publication_date "Date of publication"
-        string source "Explicit source repository"
-        string source_url "Publication landing page URL"
-        string uri "Persistent handle.net URI that redirects to source_url"
-    }
+1. **Extract Publication Links** (`extract_publication_links.py`)
+   - Scrapes publication links from the World Bank repository
+   - Output: `data/publication_links.json`
 
-    %% ENUM: DocumentType
-    DocumentType {
-        string MAIN "The main document"
-        string SUPPLEMENTAL "A supplemental document"
-        string OTHER "Other document type"
-    }
+2. **Extract Publication Details** (`extract_publication_details.py`)
+   - Extracts detailed information from each publication page
+   - Output: `data/publication_details.json`
 
-    %% ENTITY: DOCUMENT
-    DOCUMENT {
-        string id PK "Unique document identifier (dl_XXX)"
-        string publication_id FK "FK to the PUBLICATION that contains this document"
-        DocumentType type "Type of document"
-        string download_url "URL to the source document download endpoint"
-        string description "Description of the document"
-        string mime_type "MIME type of the document"
-        string charset "Character set of the document"
-        string storage_url "URL to the document storage bucket (s3://...)"
-        bigint file_size "Size of the document in bytes"
-        string language "Language of the document"
-        string version "Version of the document"
-    }
+3. **Add IDs** (`add_ids.py`)
+   - Adds unique IDs to publications and download links
+   - Modifies: `data/publication_details.json`
 
-    %% ENUM: ComponentType (Structural Nodes)
-    ComponentType {
-        %% Top-level components
-        string FRONT_MATTER
-        string BODY_MATTER
-        string BACK_MATTER
+4. **Classify File Types** (`classify_file_types.py`)
+   - Classifies file types for each download link
+   - Modifies: `data/publication_details.json`
 
-        %% Generic sub-components
-        string CONTAINER
-        string SECTION
-        string LIST
+5. **Filter Download Links** (`filter_download_links.py`)
+   - Filters and classifies which links to download
+   - Modifies: `data/publication_details.json`
 
-        %% Containers
-        string COPYRIGHT_PAGE
-        string FOOTER
-        string HEADER
-        string TEXT_BOX
-        string TITLE_PAGE
+6. **Download Files** (`download_files.py`)
+   - Downloads the selected PDF files
+   - Output: `data/pub_*/dl_*.pdf`
 
-        %% Lists
-        string BIBLIOGRAPHY
-        string LIST_OF_BOXES
-        string LIST_OF_TABLES
-        string LIST_OF_FIGURES
-        string NOTES_SECTION
-        string TABLE_OF_CONTENTS
+7. **Convert BIN Files** (`convert_bin_files.py`)
+   - Converts .bin files to .pdf if they are PDF documents
+   - Modifies: Files in `data/` directory
 
-        %% Sections
-        string ABSTRACT
-        string ACKNOWLEDGEMENTS
-        string APPENDIX
-        string CHAPTER
-        string CONCLUSION
-        string DEDICATION
-        string EPILOGUE
-        string EXECUTIVE_SUMMARY
-        string FOREWORD
-        string INDEX
-        string INTRODUCTION
-        string PART
-        string PREFACE
-    }
+8. **Upload to Database** (`upload_pubs_to_db.py`)
+   - Uploads publications and documents to the PostgreSQL database
+   - Uses: `data/publication_details.json`
 
-    %% ENUM: ContentNodeType (Content Nodes)
-    ContentNodeType {
-        string AUTHOR
-        string BLOCK_QUOTATION
-        string BIBLIOGRAPHIC_ENTRY
-        string CAPTION
-        string FIGURE
-        string FORMULA
-        string HEADING
-        string LIST_ITEM
-        string NOTE
-        string PARAGRAPH
-        string PAGE_NUMBER
-        string STANZA
-        string SUBHEADING
-        string SUBTITLE
-        string TABLE
-        string TITLE
-    }
+9. **Upload PDFs to OpenAI** (`upload_pdfs_to_openai.py`)
+   - Uploads PDF files to OpenAI vector store for AI-powered search
+   - Uses: PDF files from `data/pub_*/` directories
+   - Includes deduplication to avoid uploading existing files
 
-    %% ENTITY: DOCUMENT_COMPONENT (The Containers/Structure)
-    DOCUMENT_COMPONENT {
-        string id PK
-        string document_id FK
-        ComponentType component_type "The type of structural container"
-        string title "The heading/title of this component, e.g., 'Chapter 1: Introduction'"
-        string parent_component_id FK "Self-referencing FK to build the hierarchy"
-        int sequence_in_parent "Order of this component within its parent"
-        int4range page_range "Page range of the component (inclusive)"
-    }
+## Running Individual Steps
 
-    %% ENUM: EmbeddingSource
-    EmbeddingSource {
-        string TEXT_CONTENT "Embed the primary text content"
-        string DESCRIPTION  "Embed the AI-generated description (for tables, figures)"
-        string CAPTION "Embed the original caption (for figures, tables)"
-    }
-
-    %% ENTITY: CONTENT_NODE
-    CONTENT_NODE {
-        string id PK
-        string document_id FK
-        string parent_component_id FK "FK to the DOCUMENT_COMPONENT that contains this node"
-        ContentNodeType content_node_type
-        text content "The primary, cleaned text content of the node"
-        string storage_url "For binary content like images"
-        string description "AI-generated summary/description (for figures, tables)"
-        EmbeddingSource embedding_source "Which field to use for the vector embedding"
-        int sequence_in_parent_major "Order of this chunk within its parent component"
-        int sequence_in_parent_minor "Zero unless the node is a footnote or sidebar, in which case it indicates reading order among these supplementary nodes"
-        jsonb positional_data "[{page_pdf: int, page_logical: int, bbox: {x1: float, y1: float, x2: float, y2: float}}, ...]"
-    }
-
-    %% ENUM: RelationType (For non-hierarchical links)
-    RelationType {
-        string REFERENCES_NOTE "Text references a footnote or endnote"
-        string REFERENCES_CITATION "Text references a bibliographic entry"
-        string IS_SUPPLEMENTED_BY "A node is supplemented by another node (e.g., a sidebar or legend)"
-        string IS_CAPTIONED_BY "A node is a caption for another node"
-        string CONTINUES "A node continues from a previous one (e.g., across sections)"
-        string CROSS_REFERENCES "A node references another arbitrary node"
-    }
-
-    %% ENTITY: RELATION
-    RELATION {
-        string id PK "Unique relation identifier (rel_XXX)"
-        string source_node_id FK "The origin node of the relationship"
-        string target_node_id FK "The destination node of the relationship"
-        RelationType relation_type
-        string marker_text "Optional text for the relation, e.g., '1' for a footnote or '(Author, 2025)' for a citation"
-    }
-
-    %% ENTITY: EMBEDDING
-    EMBEDDING {
-        string id PK "Unique embedding identifier (em_XXX)"
-        string node_id FK
-        vector embedding_vector "Embedding vector"
-        string model_name "Name of the embedding model"
-        timestamp created_at "Timestamp of when the embedding was created"
-    }
-
-    %% ===== CSS STYLING =====
-    classDef enumType fill:#ffe6e6,stroke:#ff4757
-    classDef mainTable fill:#e6f3ff,stroke:#0066cc
-
-    class DocumentType,ComponentType,RelationType,ContentNodeType,EmbeddingSource enumType
-    class PUBLICATION,DOCUMENT,DOCUMENT_COMPONENT,CONTENT_NODE,RELATION,EMBEDDING mainTable
+```bash
+# Run a specific step
+uv run -m extract.extract_publication_links
+uv run -m extract.extract_publication_details
+uv run -m extract.add_ids
+uv run -m extract.classify_file_types
+uv run -m extract.filter_download_links
+uv run -m extract.download_files
+uv run -m extract.convert_bin_files
+uv run -m extract.upload_pubs_to_db
+uv run -m extract.upload_pdfs_to_openai
 ```
+
+## Configuration
+
+For the OpenAI upload step, you'll need to set up environment variables in `extract/.env`:
+
+```bash
+OPENAI_API_KEY=your_openai_api_key_here
+ASSISTANT_ID=your_openai_assistant_id_here
+```
+
+## Output
+
+After running the complete workflow, you'll have:
+- JSON files with publication metadata in `data/`
+- Downloaded PDF files organized in `data/pub_*/` directories
+- Publications and documents uploaded to the PostgreSQL database
+- PDF files uploaded to OpenAI vector store for AI-powered search
+- Currently processes 61 CCDRs comprising 126+ PDF files 

@@ -5,12 +5,12 @@ from typing import List, Dict, Any, Tuple
 
 from sqlmodel import Session, select
 
-from load.schema import (
+from extract.schema import (
     Publication,
     Document,
     DocumentType
 )
-from load.db import engine
+from extract.db import engine
 
 
 def load_publication_data(json_path: str) -> List[Dict[str, Any]]:
