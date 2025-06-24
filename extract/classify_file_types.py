@@ -58,14 +58,36 @@ def is_valid_file_info(file_info):
         return False
         
     # Check for non-utf-8 HTML responses (likely rate limiting or redirect pages)
-    if file_info.get('mime_type', '').startswith('text/html') and file_info.get('charset', '').startswith('iso-8859-1'):
+    mime_type = file_info.get('mime_type', '')
+    charset = file_info.get('charset', '')
+    if mime_type.startswith('text/html') and charset and charset.startswith('iso-8859-1'):
         return False
             
     return True
 
+def transform_worldbank_url(url):
+    """Transform World Bank download URLs to content URLs for direct file access"""
+    import re
+    
+    # Pattern for World Bank bitstream download URLs
+    download_pattern = r'https://openknowledge\.worldbank\.org/bitstreams/([a-f0-9-]+)/download'
+    match = re.match(download_pattern, url)
+    
+    if match:
+        uuid = match.group(1)
+        content_url = f"https://openknowledge.worldbank.org/server/api/core/bitstreams/{uuid}/content"
+        return content_url
+    
+    return url  # Return original URL if no transformation needed
+
 def get_file_type_from_url(url, link_text, max_retries=3):
     """Get file type with retry logic for rate limiting"""
     guessed_type = guess_file_type_from_text(link_text)
+    
+    # Transform World Bank download URLs to content URLs for direct access
+    actual_url = transform_worldbank_url(url)
+    if actual_url != url:
+        print(f"Transformed URL: {url} -> {actual_url}")
     
     for attempt in range(1, max_retries + 1):
         try:
@@ -76,7 +98,7 @@ def get_file_type_from_url(url, link_text, max_retries=3):
                 time.sleep(wait_time)
             
             # Make a GET request with stream=True to get headers and peek at content
-            with requests.get(url, stream=True, allow_redirects=True, headers=DEFAULT_HEADERS) as response:
+            with requests.get(actual_url, stream=True, allow_redirects=True, headers=DEFAULT_HEADERS) as response:
                 # Check for rate limiting
                 if response.status_code == 429:
                     if attempt == max_retries:
@@ -89,7 +111,7 @@ def get_file_type_from_url(url, link_text, max_retries=3):
                 # Get the final URL after redirects
                 final_url = response.url
                 
-                # Get content type and charset from headers
+                # Get content type and charset from the FINAL response headers (post-redirect)
                 content_type = response.headers.get('Content-Type', 'unknown')
                 parsed_header = parse_content_type(content_type)
                 
@@ -99,17 +121,20 @@ def get_file_type_from_url(url, link_text, max_retries=3):
                 # If we're still getting JSON content type or HTML, try to peek at actual content
                 if 'json' in parsed_header['mime_type'] or 'html' in parsed_header['mime_type']:
                     # Read first few bytes to detect actual file type
-                    content_start = response.raw.read(2048)  # Read first 2KB
-                    response.close()  # Important: close the connection
+                    # Use response.content instead of raw to get decompressed content
+                    response_content = response.content
+                    content_start = response_content[:2048]  # Get first 2KB
                     
                     # Use python-magic to detect file type from content
                     import magic
                     detected_type = magic.from_buffer(content_start, mime=True)
+                    if not detected_type:
+                        detected_type = 'application/octet-stream'  # Fallback
                     parsed_content = parse_content_type(detected_type)
                     
-                    # Use detected MIME type but keep charset from headers if it was specified
+                    # Use detected MIME type, but prefer charset from final response headers
                     mime_type = parsed_content['mime_type']
-                    charset = parsed_header['charset'] if parsed_header['charset'] != 'utf-8' else parsed_content['charset']
+                    charset = parsed_header['charset']
                 else:
                     mime_type = parsed_header['mime_type']
                     charset = parsed_header['charset']
@@ -119,7 +144,7 @@ def get_file_type_from_url(url, link_text, max_retries=3):
                     'mime_type': mime_type,
                     'charset': charset,
                     'content_length': content_length,
-                    'final_url': final_url,
+                    'final_url': url,  # Use original URL for storage
                     'status_code': response.status_code
                 }
                 
@@ -139,7 +164,7 @@ def get_file_type_from_url(url, link_text, max_retries=3):
                     'error': str(e),
                     'guessed_type': guessed_type,
                     'mime_type': 'error',
-                    'charset': None,
+                    'charset': None,  # Let upstream handle the None value
                     'content_length': 'error',
                     'final_url': url,
                     'status_code': 'error'
@@ -201,7 +226,7 @@ def main():
                 link['file_info'] = {
                     'error': error_msg,
                     'mime_type': 'error',
-                    'charset': None
+                    'charset': None  # Let upstream handle the None value
                 }
             else:
                 print(f"Guessed type from text: {info['guessed_type']}")

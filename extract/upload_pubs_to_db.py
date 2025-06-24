@@ -41,18 +41,35 @@ def persist_publication(pub_data: Dict[str, Any], session: Session) -> Publicati
     for dl in pub_data["downloadLinks"]:
         # Only create Document objects for links marked as to_download=True
         if dl.get("to_download", False):
+            # Validate required fields
+            file_info = dl.get("file_info", {})
+            mime_type = file_info.get("mime_type")
+            charset = file_info.get("charset")
+            
+            if not mime_type or mime_type == "error":
+                print(f"Warning: Skipping document with invalid mime_type: {dl['url']}")
+                continue
+                
+            if not charset:
+                print(f"Warning: Setting default charset for document: {dl['url']}")
+                charset = "utf-8"
+            
             doc = Document(
                 # No id or publication_id - these will be auto-generated and set by the relationship
                 type=DocumentType(dl["type"].upper()),
                 download_url=dl["url"],
                 description=dl["text"].strip(),
-                mime_type=dl["file_info"]["mime_type"],
-                charset=dl["file_info"]["charset"],
+                mime_type=mime_type,
+                charset=charset,
                 # storage_url and file_size are explicitly NULL - they will be populated later during Stage 2
                 storage_url=None,
                 file_size=None
             )
             documents.append(doc)
+    
+    # Check that we have at least one valid document
+    if not documents:
+        raise ValueError(f"No valid documents found for publication: {pub_data.get('title', 'Unknown')}")
     
     # Assign documents to the publication
     publication.documents = documents

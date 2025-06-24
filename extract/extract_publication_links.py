@@ -2,7 +2,6 @@ import json
 import time
 import random
 from playwright.sync_api import sync_playwright
-import os
 from typing import List, Dict
 
 def get_all_publication_links(base_url: str, total_pages: int = 7) -> List[Dict[str, str]]:
@@ -303,65 +302,14 @@ def extract_publication_links_from_page(page, url):
     print(f"Extracted {len(results)} unique publications from page")
     return results
 
-# Legacy functions for backward compatibility
-def verify_existing_results():
-    """
-    Verify that we have at least 61 results and all required fields are present.
-    Returns True if verification passes, False otherwise.
-    """
-    try:
-        # Check if the file exists
-        json_path = "extract/data/publication_links.json"
-        if not os.path.exists(json_path):
-            print("No existing results file found.")
-            return False
-
-        # Read and parse the JSON file
-        with open(json_path, "r", encoding="utf-8") as f:
-            results = json.load(f)
-
-        # Check number of results
-        if len(results) < 61:
-            print(f"Insufficient results: found {len(results)}, need at least 61.")
-            return False
-
-        # Check required fields in each result
-        required_fields = ["title", "url", "source", "page_found"]
-        for i, result in enumerate(results):
-            for field in required_fields:
-                if field not in result or result[field] is None:
-                    print(f"Missing or null {field} in result {i+1}")
-                    return False
-
-        print(f"Verification passed: {len(results)} valid results found.")
-        return True
-
-    except Exception as e:
-        print(f"Error during verification: {str(e)}")
-        return False
-
-def extract_all_publication_links(base_url, total_pages=7, max_retries=3):
-    """
-    Legacy function that saves results to file.
-    Load multiple pages, extract links with '/publication/' in href, and save to JSON.
-    Implements retry logic for handling rate limits.
-    """
-    all_links = get_all_publication_links(base_url, total_pages)
-    
-    # Save to file for backward compatibility
-    os.makedirs("extract/data", exist_ok=True)
-    with open("extract/data/publication_links.json", "w", encoding="utf-8") as f:
-        json.dump(all_links, f, indent=2, ensure_ascii=False)
-    
-    return len(all_links) > 0
-
 if __name__ == "__main__":
-    base_url = "https://openknowledge.worldbank.org/communities/67a73be9-a253-4ce5-8092-36d19572f721"
+    # Example usage of the main function
+    base_url = "https://openknowledge.worldbank.org/collections/5cd4b6f6-94bb-5996-b00c-58be279093de"
+    all_links = get_all_publication_links(base_url, total_pages=7)
     
-    # Check existing results first
-    if verify_existing_results():
-        print("Using existing verified results. Skipping scraping.")
-    else:
-        print("Running scraping to collect results...")
-        success = extract_all_publication_links(base_url)
-        print(f"Link extraction {'successful' if success else 'failed'}")
+    print(f"Extracted {len(all_links)} publication links:")
+    for i, link in enumerate(all_links[:5]):  # Show first 5 as example
+        print(f"{i+1}. {link['title']}")
+        print(f"   URL: {link['url']}")
+        print(f"   Found on page: {link['page_found']}")
+        print()

@@ -81,9 +81,23 @@ def run_stage_1_metadata_ingestion():
                 continue
 
             # b. Get MIME types (lightweight HEAD/GET request)
+            valid_links = []
             for link in pub_details["downloadLinks"]:
                 file_info = get_file_type_from_url(link['url'], link['text'])
                 link['file_info'] = file_info
+                
+                # Only keep links with valid file info
+                if file_info and file_info.get('mime_type') != 'error':
+                    valid_links.append(link)
+                else:
+                    print(f"  -> Skipping link with failed file detection: {link['url']}")
+            
+            # Check if we have any valid download links
+            if not valid_links:
+                print(f"  -> No valid download links found. Skipping publication.")
+                continue
+                
+            pub_details["downloadLinks"] = valid_links
 
             # c. Classify Links using Rules
             pub_details["downloadLinks"] = classify_download_links(pub_details["downloadLinks"])
@@ -92,11 +106,22 @@ def run_stage_1_metadata_ingestion():
             pub_details["source"] = link_info.get("source", "World Bank Open Knowledge Repository")
             pub_details["page_found"] = link_info.get("page_found", 1)
             
+            # d. Validate required fields before saving
+            if not pub_details.get("title") or not pub_details.get("citation") or not pub_details.get("uri"):
+                print(f"  -> Missing required fields (title, citation, or uri). Skipping publication.")
+                continue
+            
+            # e. Validate that we have at least one document to download
+            downloadable_links = [link for link in pub_details["downloadLinks"] if link.get("to_download", False)]
+            if not downloadable_links:
+                print(f"  -> No downloadable documents found. Skipping publication.")
+                continue
+            
             # 4. Persist to Database in a transaction
             try:
                 persist_publication(pub_details, session)
                 session.commit()
-                print(f"  -> Successfully saved to database.")
+                print(f"  -> Successfully saved to database with {len(downloadable_links)} downloadable documents.")
             except Exception as e:
                 print(f"  -> ERROR: Failed to save to database. Rolling back. Error: {e}")
                 session.rollback()
