@@ -73,8 +73,14 @@ def scrape_publication_details(url: str) -> Optional[Dict[str, Any]]:
             
             # Wait for the page to load
             page.wait_for_load_state("networkidle")
-            print("Waiting for additional content loading...")
-            page.wait_for_timeout(5000)  # Additional 5s wait for any dynamic content
+            
+            # Wait for page content to load
+            print("Waiting for page content to load...")
+            try:
+                page.wait_for_selector('h2, h5, a[href*="/bitstreams/"]', timeout=8000)
+                print("Page content loaded")
+            except Exception as e:
+                print(f"Content loading timeout (continuing anyway): {e}")
             
             # Check page title for common error indicators
             title = page.title()
@@ -84,72 +90,136 @@ def scrape_publication_details(url: str) -> Optional[Dict[str, Any]]:
                 print(f"Detected rate limiting in title.")
                 return None
             
-            # Use JavaScript to extract all required information
-            publication_data = page.evaluate("""() => {
-                // Get the title
-                const titleElement = document.querySelector('h2');
-                const title = titleElement ? titleElement.textContent.trim().replace('Publication:', '').trim() : null;
-                
-                // Helper to get field value based on heading
-                const getFieldValue = (label) => {
-                    const heading = Array.from(document.querySelectorAll('h5')).find(h => h.textContent.trim() === label);
-                    if (!heading) return null;
+            # Use Python Playwright API to extract all required information
+            print("Extracting publication details...")
+            publication_data = {}
+            
+            # Get the title
+            try:
+                title_element = page.locator('h2').first
+                if title_element.count() > 0:
+                    title_text = title_element.inner_text().strip()
+                    # Remove "Publication:" prefix if present
+                    if title_text.startswith('Publication:'):
+                        title_text = title_text.replace('Publication:', '').strip()
+                    publication_data['title'] = title_text
+                else:
+                    publication_data['title'] = None
+                    print("Warning: No title found")
+            except Exception as e:
+                print(f"Error extracting title: {e}")
+                publication_data['title'] = None
+            
+            # Helper function to get field value based on h5 heading
+            def get_field_value(label: str) -> Optional[str]:
+                try:
+                    # Find h5 heading with the label
+                    headings = page.locator('h5')
+                    heading_count = headings.count()
                     
-                    let sibling = heading.nextElementSibling;
-                    while (sibling && !sibling.textContent.trim()) {
-                        sibling = sibling.nextElementSibling;
-                    }
-                    return sibling ? sibling.textContent.trim() : null;
-                };
+                    for i in range(heading_count):
+                        heading = headings.nth(i)
+                        if heading.inner_text().strip() == label:
+                            # Found the heading, now find the next sibling with content
+                            try:
+                                # Try to find the next element with content
+                                parent = heading.locator('xpath=..')
+                                following_elements = parent.locator(f'xpath=.//*[normalize-space(text()) != ""][position() > count(h5[normalize-space(text()) = "{label}"]/preceding-sibling::*) + 1]')
+                                
+                                if following_elements.count() > 0:
+                                    content = following_elements.first.inner_text().strip()
+                                    return content if content else None
+                                
+                                # Fallback: try next sibling elements
+                                next_sibling = heading.locator('xpath=following-sibling::*[1]')
+                                if next_sibling.count() > 0:
+                                    content = next_sibling.inner_text().strip()
+                                    return content if content else None
+                                    
+                            except Exception:
+                                pass
+                    return None
+                except Exception as e:
+                    print(f"Error getting field value for {label}: {e}")
+                    return None
+            
+            # Extract field values
+            publication_data['abstract'] = get_field_value('Abstract')
+            publication_data['citation'] = get_field_value('Citation')
+            
+            # Get URI - special handling to extract the link
+            try:
+                uri = None
+                headings = page.locator('h5')
+                heading_count = headings.count()
                 
-                // Get abstract - look for content after the Abstract heading
-                const abstract = getFieldValue('Abstract');
+                for i in range(heading_count):
+                    heading = headings.nth(i)
+                    if heading.inner_text().strip() == 'URI':
+                        # Find the link in the following content
+                        try:
+                            parent = heading.locator('xpath=..')
+                            uri_links = parent.locator('a')
+                            uri_link_count = uri_links.count()
+                            
+                            for j in range(uri_link_count):
+                                link = uri_links.nth(j)
+                                href = link.get_attribute('href')
+                                if href and ('hdl.handle.net' in href or 'doi.org' in href):
+                                    uri = href
+                                    break
+                        except Exception:
+                            pass
+                        break
                 
-                // Get citation - look for content after Citation heading
-                const citation = getFieldValue('Citation');
+                publication_data['uri'] = uri
+            except Exception as e:
+                print(f"Error extracting URI: {e}")
+                publication_data['uri'] = None
+            
+            # Get download links
+            try:
+                download_links = []
+                bitstream_links = page.locator('a[href*="/bitstreams/"]')
+                link_count = bitstream_links.count()
                 
-                // Get URI - look for content after URI heading
-                let uri = null;
-                const uriHeading = Array.from(document.querySelectorAll('h5')).find(h => h.textContent.trim() === 'URI');
-                if (uriHeading) {
-                    // Get the next sibling with URI content and extract the link
-                    let sibling = uriHeading.nextElementSibling;
-                    while (sibling && (!sibling.textContent.trim() || !sibling.querySelector('a'))) {
-                        sibling = sibling.nextElementSibling;
-                    }
-                    if (sibling && sibling.querySelector('a')) {
-                        uri = sibling.querySelector('a').href;
-                    }
-                }
+                for i in range(link_count):
+                    link = bitstream_links.nth(i)
+                    try:
+                        url_attr = link.get_attribute('href')
+                        if not url_attr:
+                            continue  # Skip links without URLs
+                        url = url_attr  # Now url is guaranteed to be str
+                        
+                        text = link.inner_text().strip()
+                        if not text:
+                            continue  # Skip links without text
+                            
+                        # At this point, both url and text are guaranteed to be non-None strings
+                        download_links.append({
+                            'url': str(url),  # Type assertion for linter
+                            'text': text
+                        })
+                    except Exception:
+                        continue
                 
-                // Get download links
-                const downloadLinks = Array.from(document.querySelectorAll('a[href*="/bitstreams/"]'))
-                    .map(link => ({
-                        url: link.href,
-                        text: link.textContent.trim()
-                    }));
-                
-                // Get additional metadata
-                const date = getFieldValue('Date');
-                const published = getFieldValue('Published');
-                const authors = getFieldValue('Author(s)');
-                
-                return {
-                    title,
-                    abstract,
-                    citation,
-                    uri,
-                    downloadLinks,
-                    metadata: {
-                        date,
-                        published,
-                        authors
-                    }
-                };
-            }""")
+                publication_data['downloadLinks'] = download_links
+            except Exception as e:
+                print(f"Error extracting download links: {e}")
+                publication_data['downloadLinks'] = []
+            
+            # Get additional metadata
+            metadata: Dict[str, Optional[str]] = {
+                'date': get_field_value('Date'),
+                'published': get_field_value('Published'),
+                'authors': get_field_value('Author(s)')
+            }
+            publication_data['metadata'] = metadata
             
             # Add source URL to the data
             publication_data["source_url"] = url
+            
+            print(f"Extracted details for: {publication_data.get('title', 'Unknown Title')}")
             
             return publication_data
             
@@ -223,8 +293,14 @@ def extract_publication_details(page, url):
     
     # Wait for the page to load
     page.wait_for_load_state("networkidle")
-    print("Waiting for additional content loading...")
-    page.wait_for_timeout(5000)  # Additional 5s wait for any dynamic content
+    
+    # Wait for page content to load  
+    print("Waiting for page content to load...")
+    try:
+        page.wait_for_selector('h2, h5, a[href*="/bitstreams/"]', timeout=8000)
+        print("Page content loaded")
+    except Exception as e:
+        print(f"Content loading timeout (continuing anyway): {e}")
     
     # Check page title for common error indicators
     title = page.title()
@@ -234,72 +310,136 @@ def extract_publication_details(page, url):
         print(f"Detected rate limiting in title.")
         return None
     
-    # Use JavaScript to extract all required information
-    publication_data = page.evaluate("""() => {
-        // Get the title
-        const titleElement = document.querySelector('h2');
-        const title = titleElement ? titleElement.textContent.trim().replace('Publication:', '').trim() : null;
-        
-        // Helper to get field value based on heading
-        const getFieldValue = (label) => {
-            const heading = Array.from(document.querySelectorAll('h5')).find(h => h.textContent.trim() === label);
-            if (!heading) return null;
+    # Use Python Playwright API to extract all required information
+    print("Extracting publication details...")
+    publication_data = {}
+    
+    # Get the title
+    try:
+        title_element = page.locator('h2').first
+        if title_element.count() > 0:
+            title_text = title_element.inner_text().strip()
+            # Remove "Publication:" prefix if present
+            if title_text.startswith('Publication:'):
+                title_text = title_text.replace('Publication:', '').strip()
+            publication_data['title'] = title_text
+        else:
+            publication_data['title'] = None
+            print("Warning: No title found")
+    except Exception as e:
+        print(f"Error extracting title: {e}")
+        publication_data['title'] = None
+    
+    # Helper function to get field value based on h5 heading
+    def get_field_value(label: str) -> Optional[str]:
+        try:
+            # Find h5 heading with the label
+            headings = page.locator('h5')
+            heading_count = headings.count()
             
-            let sibling = heading.nextElementSibling;
-            while (sibling && !sibling.textContent.trim()) {
-                sibling = sibling.nextElementSibling;
-            }
-            return sibling ? sibling.textContent.trim() : null;
-        };
+            for i in range(heading_count):
+                heading = headings.nth(i)
+                if heading.inner_text().strip() == label:
+                    # Found the heading, now find the next sibling with content
+                    try:
+                        # Try to find the next element with content
+                        parent = heading.locator('xpath=..')
+                        following_elements = parent.locator(f'xpath=.//*[normalize-space(text()) != ""][position() > count(h5[normalize-space(text()) = "{label}"]/preceding-sibling::*) + 1]')
+                        
+                        if following_elements.count() > 0:
+                            content = following_elements.first.inner_text().strip()
+                            return content if content else None
+                        
+                        # Fallback: try next sibling elements
+                        next_sibling = heading.locator('xpath=following-sibling::*[1]')
+                        if next_sibling.count() > 0:
+                            content = next_sibling.inner_text().strip()
+                            return content if content else None
+                            
+                    except Exception:
+                        pass
+            return None
+        except Exception as e:
+            print(f"Error getting field value for {label}: {e}")
+            return None
+    
+    # Extract field values
+    publication_data['abstract'] = get_field_value('Abstract')
+    publication_data['citation'] = get_field_value('Citation')
+    
+    # Get URI - special handling to extract the link
+    try:
+        uri = None
+        headings = page.locator('h5')
+        heading_count = headings.count()
         
-        // Get abstract - look for content after the Abstract heading
-        const abstract = getFieldValue('Abstract');
+        for i in range(heading_count):
+            heading = headings.nth(i)
+            if heading.inner_text().strip() == 'URI':
+                # Find the link in the following content
+                try:
+                    parent = heading.locator('xpath=..')
+                    uri_links = parent.locator('a')
+                    uri_link_count = uri_links.count()
+                    
+                    for j in range(uri_link_count):
+                        link = uri_links.nth(j)
+                        href = link.get_attribute('href')
+                        if href and ('hdl.handle.net' in href or 'doi.org' in href):
+                            uri = href
+                            break
+                except Exception:
+                    pass
+                break
         
-        // Get citation - look for content after Citation heading
-        const citation = getFieldValue('Citation');
+        publication_data['uri'] = uri
+    except Exception as e:
+        print(f"Error extracting URI: {e}")
+        publication_data['uri'] = None
+    
+    # Get download links
+    try:
+        download_links = []
+        bitstream_links = page.locator('a[href*="/bitstreams/"]')
+        link_count = bitstream_links.count()
         
-        // Get URI - look for content after URI heading
-        let uri = null;
-        const uriHeading = Array.from(document.querySelectorAll('h5')).find(h => h.textContent.trim() === 'URI');
-        if (uriHeading) {
-            // Get the next sibling with URI content and extract the link
-            let sibling = uriHeading.nextElementSibling;
-            while (sibling && (!sibling.textContent.trim() || !sibling.querySelector('a'))) {
-                sibling = sibling.nextElementSibling;
-            }
-            if (sibling && sibling.querySelector('a')) {
-                uri = sibling.querySelector('a').href;
-            }
-        }
+        for i in range(link_count):
+            link = bitstream_links.nth(i)
+            try:
+                url_attr = link.get_attribute('href')
+                if not url_attr:
+                    continue  # Skip links without URLs
+                link_url = url_attr  # Now link_url is guaranteed to be str
+                
+                text = link.inner_text().strip()
+                if not text:
+                    continue  # Skip links without text
+                    
+                # At this point, both link_url and text are guaranteed to be non-None strings
+                download_links.append({
+                    'url': link_url,
+                    'text': text
+                })
+            except Exception:
+                continue
         
-        // Get download links
-        const downloadLinks = Array.from(document.querySelectorAll('a[href*="/bitstreams/"]'))
-            .map(link => ({
-                url: link.href,
-                text: link.textContent.trim()
-            }));
-        
-        // Get additional metadata
-        const date = getFieldValue('Date');
-        const published = getFieldValue('Published');
-        const authors = getFieldValue('Author(s)');
-        
-        return {
-            title,
-            abstract,
-            citation,
-            uri,
-            downloadLinks,
-            metadata: {
-                date,
-                published,
-                authors
-            }
-        };
-    }""")
+        publication_data['downloadLinks'] = download_links
+    except Exception as e:
+        print(f"Error extracting download links: {e}")
+        publication_data['downloadLinks'] = []
+    
+    # Get additional metadata
+    metadata: Dict[str, Optional[str]] = {
+        'date': get_field_value('Date'),
+        'published': get_field_value('Published'),
+        'authors': get_field_value('Author(s)')
+    }
+    publication_data['metadata'] = metadata
     
     # Add source URL to the data
     publication_data["source_url"] = url
+    
+    print(f"Extracted details for: {publication_data.get('title', 'Unknown Title')}")
     
     return publication_data
 
