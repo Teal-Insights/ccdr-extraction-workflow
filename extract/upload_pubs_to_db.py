@@ -12,7 +12,58 @@ from extract.schema import (
 )
 from extract.db import engine
 
+def persist_publication(pub_data: Dict[str, Any], session: Session) -> Publication:
+    """
+    Creates SQLModel objects for a publication and its documents and adds them
+    to the session. Does NOT commit the session.
 
+    Args:
+        pub_data: A dictionary with the complete publication metadata.
+        session: The active SQLModel session.
+
+    Returns:
+        The created Publication object, ready to be committed.
+    """
+    # Create the publication (without ID - will be auto-generated)
+    publication = Publication(
+        title=pub_data["title"],
+        abstract=pub_data.get("abstract"),  # Using get() for optional fields
+        citation=pub_data["citation"],
+        authors=pub_data["metadata"]["authors"],
+        publication_date=parse_date(pub_data["metadata"]["date"]),
+        source=pub_data["source"],
+        source_url=pub_data["source_url"],
+        uri=pub_data["uri"]
+    )
+    
+    # Create documents and add them to the publication's documents list
+    documents = []
+    for dl in pub_data["downloadLinks"]:
+        # Only create Document objects for links marked as to_download=True
+        if dl.get("to_download", False):
+            doc = Document(
+                # No id or publication_id - these will be auto-generated and set by the relationship
+                type=DocumentType(dl["type"].upper()),
+                download_url=dl["url"],
+                description=dl["text"].strip(),
+                mime_type=dl["file_info"]["mime_type"],
+                charset=dl["file_info"]["charset"],
+                # storage_url and file_size are explicitly NULL - they will be populated later during Stage 2
+                storage_url=None,
+                file_size=None
+            )
+            documents.append(doc)
+    
+    # Assign documents to the publication
+    publication.documents = documents
+    
+    # Add the main publication object to the session
+    session.add(publication)
+    
+    # Return the publication object (caller is responsible for committing)
+    return publication
+
+# Legacy and utility functions for backward compatibility
 def load_publication_data(json_path: str) -> List[Dict[str, Any]]:
     """Load publication data from JSON file."""
     with open(json_path, 'r') as f:
@@ -58,17 +109,19 @@ def create_publication_with_documents(pub_data: Dict[str, Any]) -> Publication:
     # Create documents and add them to the publication's documents list
     documents = []
     for dl in pub_data["downloadLinks"]:
-        doc = Document(
-            # No id or publication_id - these will be auto-generated and set by the relationship
-            type=DocumentType(dl["type"].upper()),
-            download_url=dl["url"],
-            description=dl["text"].strip(),
-            mime_type=dl["file_info"]["mime_type"],
-            charset=dl["file_info"]["charset"],
-            # storage_url will be populated later during processing
-            # file_size will be populated later during processing
-        )
-        documents.append(doc)
+        # Only create Document objects for links marked as to_download=True
+        if dl.get("to_download", False):
+            doc = Document(
+                # No id or publication_id - these will be auto-generated and set by the relationship
+                type=DocumentType(dl["type"].upper()),
+                download_url=dl["url"],
+                description=dl["text"].strip(),
+                mime_type=dl["file_info"]["mime_type"],
+                charset=dl["file_info"]["charset"],
+                # storage_url will be populated later during processing
+                # file_size will be populated later during processing
+            )
+            documents.append(doc)
     
     # Assign documents to the publication
     publication.documents = documents

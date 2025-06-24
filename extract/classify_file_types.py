@@ -194,11 +194,12 @@ def main():
             
             info = get_file_type_from_url(url, link['text'])
             
-            if 'error' in info:
-                print(f"Error: {info['error']}")
+            if info is None or 'error' in info:
+                error_msg = info.get('error', 'Unknown error') if info else 'Failed to get file info'
+                print(f"Error: {error_msg}")
                 # Store error information in the link
                 link['file_info'] = {
-                    'error': info['error'],
+                    'error': error_msg,
                     'mime_type': 'error',
                     'charset': None
                 }

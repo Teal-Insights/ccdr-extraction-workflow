@@ -29,6 +29,13 @@ from botocore.exceptions import ClientError, NoCredentialsError, TokenRetrievalE
 from dotenv import load_dotenv
 import logging
 
+# Add the Document import for the new utility function
+try:
+    from .schema import Document
+except ImportError:
+    # Fallback for when running as main module
+    from extract.schema import Document
+
 # Load environment variables
 load_dotenv()
 
@@ -70,6 +77,54 @@ def get_aws_session():
     
     # Fall back to default session (will use SSO if configured as default)
     return boto3.Session()
+
+
+def get_s3_client():
+    """Initializes and returns a boto3 S3 client."""
+    # This reuses the logic from the original script to get a session.
+    # It assumes credentials/profile are configured via environment variables or SSO.
+    try:
+        session = get_aws_session()
+        sts_client = session.client('sts')
+        sts_client.get_caller_identity()  # Test credentials
+        return session.client('s3')
+    except (NoCredentialsError, Exception):
+        print("Falling back to default AWS credential chain.")
+        return boto3.client('s3')
+
+
+def upload_file_to_s3(
+    local_path: str,
+    doc: Document,
+    s3_client,
+    bucket_name: str
+) -> str:
+    """
+    Uploads a single file to S3 and returns its public URL.
+
+    Args:
+        local_path: The path to the local file to upload.
+        doc: The Document object, used for naming the S3 key.
+        s3_client: The boto3 S3 client instance.
+        bucket_name: The name of the S3 bucket.
+
+    Returns:
+        The final S3 storage URL for the object.
+    """
+    local_file = Path(local_path)
+    
+    # The S3 key should mirror the local path structure for stability.
+    s3_key = f"pub_{doc.publication_id}/doc_{doc.id}{local_file.suffix}"
+    
+    print(f"  -> Uploading '{local_file.name}' to S3 bucket '{bucket_name}' with key '{s3_key}'")
+    s3_client.upload_file(str(local_file), bucket_name, s3_key)
+    
+    # Construct the final S3 URL
+    region = s3_client.meta.region_name
+    storage_url = f"https://{bucket_name}.s3.{region}.amazonaws.com/{s3_key}"
+    print(f"  -> Upload complete. Storage URL: {storage_url}")
+    
+    return storage_url
 
 
 def check_aws_authentication() -> tuple[bool, boto3.Session | None]:

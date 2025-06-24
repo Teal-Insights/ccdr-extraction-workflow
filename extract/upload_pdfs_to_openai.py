@@ -12,7 +12,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 # Load environment variables from .env file
-load_dotenv()
+load_dotenv(override=True)
 
 # Helper function to get or create a vector store
 async def get_vector_store(assistant_id: str, client: AsyncOpenAI) -> str | None:

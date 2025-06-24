@@ -30,6 +30,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "mypy>=1.16.1",
     "types-requests>=2.32.0.20250328",
     "types-tqdm>=4.67.0.20250417",
 ]
