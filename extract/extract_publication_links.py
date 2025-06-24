@@ -22,15 +22,50 @@ def get_all_publication_links(base_url: str, total_pages: int = 7) -> List[Dict[
     max_retries = 3
     
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
+        browser = p.chromium.launch(
+            headless=True,
+            args=[
+                '--no-sandbox',
+                '--disable-blink-features=AutomationControlled',
+                '--disable-web-security',
+                '--disable-dev-shm-usage'
+            ]
+        )
         
         # Create context with more realistic browser settings
         context = browser.new_context(
-            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36",
-            viewport={"width": 1920, "height": 1080}
+            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            viewport={"width": 1920, "height": 1080},
+            locale="en-US",
+            timezone_id="America/New_York",
+            extra_http_headers={
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+                "Accept-Language": "en-US,en;q=0.9",
+                "Accept-Encoding": "gzip, deflate, br",
+                "DNT": "1",
+                "Connection": "keep-alive",
+                "Upgrade-Insecure-Requests": "1",
+                "Sec-Fetch-Dest": "document",
+                "Sec-Fetch-Mode": "navigate",
+                "Sec-Fetch-Site": "none",
+                "Sec-Fetch-User": "?1",
+                "Cache-Control": "max-age=0"
+            }
         )
         
         page = context.new_page()
+        
+        # Hide automation indicators
+        page.add_init_script("""
+            Object.defineProperty(navigator, 'webdriver', {
+                get: () => undefined,
+            });
+            
+            // Remove automation indicators
+            delete window.cdc_adoQpoasnfa76pfcZLmcfl_Array;
+            delete window.cdc_adoQpoasnfa76pfcZLmcfl_Promise;
+            delete window.cdc_adoQpoasnfa76pfcZLmcfl_Symbol;
+        """)
         
         for page_num in range(1, total_pages + 1):
             for attempt in range(1, max_retries + 1):
@@ -103,7 +138,7 @@ def get_all_publication_links(base_url: str, total_pages: int = 7) -> List[Dict[
 
 def extract_publication_links_from_page(page, url):
     """
-    Extract publication links from a single page.
+    Extract publication links from a single page using Playwright's Python API.
     Returns a list of publication data.
     """
     print(f"Navigating to: {url}")
@@ -116,8 +151,55 @@ def extract_publication_links_from_page(page, url):
     
     # Wait for the page to load
     page.wait_for_load_state("networkidle")
-    print("Waiting for additional content loading...")
-    page.wait_for_timeout(5000)  # Additional 5s wait for any dynamic content
+    
+    # Wait for content to appear - this replaces the hardcoded delays
+    print("Waiting for page content to load...")
+    try:
+        # Wait for publication links or other content indicators
+        page.wait_for_selector('a[href*="/publication/"], .pagination, .search-results, .item', timeout=8000)
+        print("Page content loaded")
+    except Exception as e:
+        print(f"Content loading timeout (continuing anyway): {e}")
+    
+    # Handle cookie consent banner if present
+    print("Checking for cookie consent banner...")
+    try:
+        # Look for common cookie consent elements
+        consent_selectors = [
+            'button:has-text("Accept")',
+            'button:has-text("That\'s ok")', 
+            'button:has-text("OK")',
+            'button:has-text("Agree")',
+            'button:has-text("Continue")',
+            '[data-testid="accept-cookies"]',
+            '.cookie-accept',
+            '#accept-cookies'
+        ]
+        
+        for selector in consent_selectors:
+            try:
+                consent_button = page.locator(selector).first
+                if consent_button.count() > 0:
+                    print(f"Found consent button with selector: {selector}")
+                    consent_button.click()
+                    print("Clicked consent button")
+                    
+                    # Wait for page to stabilize after consent
+                    try:
+                        page.wait_for_load_state("networkidle", timeout=5000)
+                        print("Page stabilized after consent")
+                    except Exception as e:
+                        print(f"Timeout waiting for page to stabilize: {e}")
+                    
+                    break
+            except Exception as e:
+                print(f"Error with consent selector {selector}: {e}")
+                continue
+        else:
+            print("No consent button found")
+            
+    except Exception as e:
+        print(f"Error handling consent banner: {e}")
     
     # Check page title for common error indicators
     title = page.title()
@@ -127,72 +209,99 @@ def extract_publication_links_from_page(page, url):
         print(f"Detected rate limiting in title.")
         return None
     
-    # Use JavaScript to extract all publication links with better title handling
-    # and deduplication based on URL
-    publication_data = page.evaluate("""() => {
-        // Create a Map to store unique links by URL
-        const linkMap = new Map();
-        
-        // Find all links containing '/publication/'
-        const links = Array.from(document.querySelectorAll('a[href*="/publication/"]'));
-        
-        // Process each link
-        links.forEach(link => {
-            const href = link.href;
-            const linkText = link.textContent.trim();
-            
-            // Initialize entry if this URL hasn't been seen yet
-            if (!linkMap.has(href)) {
-                linkMap.set(href, {
-                    url: href,
-                    titles: [],
-                    bestTitle: ""
-                });
-            }
-            
-            // Add this title if not empty
-            if (linkText && !['download', 'view', 'pdf', 'read'].includes(linkText.toLowerCase())) {
-                linkMap.get(href).titles.push(linkText);
-            }
-            
-            // Try to find title from parent containers
-            const parent = link.closest('.item') || link.closest('li') || link.parentElement;
-            if (parent) {
-                // Try common title selectors
-                const titleSelectors = ['h2', 'h3', 'h4', '.title', '.item-title', 'h1', 'h5'];
-                for (const selector of titleSelectors) {
-                    const titleElem = parent.querySelector(selector);
-                    if (titleElem) {
-                        const titleText = titleElem.textContent.trim();
-                        if (titleText) {
-                            linkMap.get(href).titles.push(titleText);
-                            break;
-                        }
-                    }
-                }
-            }
-        });
-        
-        // Process the map to select the best title for each URL
-        const results = [];
-        linkMap.forEach((item, url) => {
-            // Sort titles by length (longer titles often have more information)
-            const sortedTitles = item.titles.sort((a, b) => b.length - a.length);
-            
-            // Select the longest title that's not just a few characters
-            const bestTitle = sortedTitles.find(title => title.length > 3) || "Unknown Title";
-            
-            results.push({
-                url: url,
-                title: bestTitle,
-                allTitles: item.titles
-            });
-        });
-        
-        return results;
-    }""")
+    # Use Playwright's Python API to extract publication links
+    print("Extracting publication links...")
     
-    return publication_data
+    # Find all links containing '/publication/' in their href
+    publication_links = page.locator('a[href*="/publication/"]')
+    link_count = publication_links.count()
+    print(f"Found {link_count} publication links on page")
+    
+    if link_count == 0:
+        print("No publication links found.")
+        return []
+    
+    # Track unique URLs to avoid duplicates
+    link_map = {}
+    skip_texts = {'download', 'view', 'pdf', 'read'}
+    
+    # Process each link
+    for i in range(link_count):
+        try:
+            link = publication_links.nth(i)
+            href = link.get_attribute('href')
+            
+            if not href:
+                continue
+                
+            # Convert relative URLs to absolute
+            if href.startswith('/'):
+                href = f"https://openknowledge.worldbank.org{href}"
+            
+            # Initialize entry if URL hasn't been seen
+            if href not in link_map:
+                link_map[href] = {
+                    'url': href,
+                    'titles': [],
+                }
+            
+            # Get link text
+            try:
+                link_text = link.inner_text().strip()
+                if link_text and link_text.lower() not in skip_texts:
+                    link_map[href]['titles'].append(link_text)
+            except Exception:
+                pass  # Skip if can't get text
+            
+            # Try to find title from parent containers
+            try:
+                # Look for parent elements that might contain the title
+                parent_selectors = ['li', '.item', '.publication-item', '.result-item']
+                
+                for selector in parent_selectors:
+                    try:
+                        parent = link.locator(f'xpath=ancestor::{selector.replace(".", "")}[1]')
+                        if parent.count() > 0:
+                            # Try common title selectors within the parent
+                            title_selectors = ['h1', 'h2', 'h3', 'h4', 'h5', '.title', '.item-title']
+                            for title_selector in title_selectors:
+                                try:
+                                    title_elem = parent.locator(title_selector).first
+                                    if title_elem.count() > 0:
+                                        title_text = title_elem.inner_text().strip()
+                                        if title_text and len(title_text) > 3:
+                                            link_map[href]['titles'].append(title_text)
+                                            break
+                                except Exception:
+                                    continue
+                            break
+                    except Exception:
+                        continue
+                        
+            except Exception:
+                pass  # Skip if can't find parent title
+                
+        except Exception as e:
+            print(f"Error processing link {i}: {e}")
+            continue
+    
+    # Process the results to select the best title for each URL
+    results = []
+    for url, data in link_map.items():
+        # Sort titles by length (longer titles often have more information)
+        sorted_titles = sorted(data['titles'], key=len, reverse=True)
+        
+        # Select the longest title that's substantial
+        best_title = next((title for title in sorted_titles if len(title) > 3), "Unknown Title")
+        
+        results.append({
+            'url': url,
+            'title': best_title,
+            'allTitles': data['titles']
+        })
+    
+    print(f"Extracted {len(results)} unique publications from page")
+    return results
 
 # Legacy functions for backward compatibility
 def verify_existing_results():
@@ -247,7 +356,7 @@ def extract_all_publication_links(base_url, total_pages=7, max_retries=3):
     return len(all_links) > 0
 
 if __name__ == "__main__":
-    base_url = "https://openknowledge.worldbank.org/collections/5cd4b6f6-94bb-5996-b00c-58be279093de"
+    base_url = "https://openknowledge.worldbank.org/communities/67a73be9-a253-4ce5-8092-36d19572f721"
     
     # Check existing results first
     if verify_existing_results():
