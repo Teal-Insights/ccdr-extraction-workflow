@@ -10,10 +10,10 @@ The database serves as the handoff point between stages.
 
 Usage:
     uv run extract_ccdrs.py [--stage1] [--stage2] [--openai]
-    
+
 Arguments:
     --stage1    Run only Stage 1: Metadata Ingestion
-    --stage2    Run only Stage 2: File Processing  
+    --stage2    Run only Stage 2: File Processing
     --openai    Run OpenAI upload after other stages
 """
 
@@ -40,7 +40,7 @@ load_dotenv(override=True)
 def identify_new_publications(scraped_links: list, session: Session) -> list:
     """Queries the DB and filters for publication links that are not yet present."""
     existing_uris = set(session.exec(select(Publication.uri)).all())
-    new_links = [link for link in scraped_links if link['url'] not in existing_uris]
+    new_links = [link for link in scraped_links if link["url"] not in existing_uris]
     print(f"Found {len(scraped_links)} total publications, {len(new_links)} are new.")
     return new_links
 
@@ -56,7 +56,7 @@ def run_stage_1_metadata_ingestion():
         - Persists the new publication and its documents to the DB.
     """
     print("--- Running Stage 1: Metadata Ingestion ---")
-    
+
     # 1. Scrape All Publication Links
     base_url = "https://openknowledge.worldbank.org/collections/5cd4b6f6-94bb-5996-b00c-58be279093de"
     all_links = get_all_publication_links(base_url)
@@ -64,70 +64,90 @@ def run_stage_1_metadata_ingestion():
     with Session(engine) as session:
         # 2. Identify New Publications
         new_links_to_process = identify_new_publications(all_links, session)
-        
+
         if not new_links_to_process:
             print("No new publications to process.")
             print("--- Stage 1 Complete ---")
             return
-        
+
         # 3. Process Each New Publication
         for link_info in new_links_to_process:
             print(f"\nProcessing new publication: {link_info['title']}")
-            
+
             # a. Scrape Details
-            pub_details = scrape_publication_details(link_info['url'])
+            pub_details = scrape_publication_details(link_info["url"])
             if not pub_details or not pub_details.get("downloadLinks"):
-                print(f"  -> Failed to scrape details or no download links found. Skipping.")
+                print(
+                    f"  -> Failed to scrape details or no download links found. Skipping."
+                )
                 continue
 
             # b. Get MIME types (lightweight HEAD/GET request)
             valid_links = []
             for link in pub_details["downloadLinks"]:
-                file_info = get_file_type_from_url(link['url'], link['text'])
-                link['file_info'] = file_info
-                
+                file_info = get_file_type_from_url(link["url"], link["text"])
+                link["file_info"] = file_info
+
                 # Only keep links with valid file info
-                if file_info and file_info.get('mime_type') != 'error':
+                if file_info and file_info.get("mime_type") != "error":
                     valid_links.append(link)
                 else:
-                    print(f"  -> Skipping link with failed file detection: {link['url']}")
-            
+                    print(
+                        f"  -> Skipping link with failed file detection: {link['url']}"
+                    )
+
             # Check if we have any valid download links
             if not valid_links:
                 print(f"  -> No valid download links found. Skipping publication.")
                 continue
-                
+
             pub_details["downloadLinks"] = valid_links
 
             # c. Classify Links
             pub_details["downloadLinks"] = classify_download_links(
-                pub_details["downloadLinks"], 
+                pub_details["downloadLinks"],
                 pub_details.get("title", "Unknown Title"),
-                pub_details.get("source_url", "Unknown URL")
+                pub_details.get("source_url", "Unknown URL"),
             )
-            
+
             # Add metadata from the original link info
-            pub_details["source"] = link_info.get("source", "World Bank Open Knowledge Repository")
+            pub_details["source"] = link_info.get(
+                "source", "World Bank Open Knowledge Repository"
+            )
             pub_details["page_found"] = link_info.get("page_found", 1)
-            
+
             # d. Validate required fields before saving
-            if not pub_details.get("title") or not pub_details.get("citation") or not pub_details.get("uri"):
-                print(f"  -> Missing required fields (title, citation, or uri). Skipping publication.")
+            if (
+                not pub_details.get("title")
+                or not pub_details.get("citation")
+                or not pub_details.get("uri")
+            ):
+                print(
+                    f"  -> Missing required fields (title, citation, or uri). Skipping publication."
+                )
                 continue
-            
+
             # e. Validate that we have at least one document to download
-            downloadable_links = [link for link in pub_details["downloadLinks"] if link.get("to_download", False)]
+            downloadable_links = [
+                link
+                for link in pub_details["downloadLinks"]
+                if link.get("to_download", False)
+            ]
             if not downloadable_links:
                 print(f"  -> No downloadable documents found. Skipping publication.")
                 continue
-            
+
             # 4. Persist to Database in a transaction
             try:
                 persist_publication(pub_details, session)
                 session.commit()
-                print(f"  -> Successfully saved to database with {len(downloadable_links)} downloadable documents.")
+                print(
+                    f"  -> Successfully saved to database with {len(downloadable_links)} downloadable documents."
+                )
             except Exception as e:
-                print(f"  -> ERROR: Failed to save to database. Rolling back. Error: {e}")
+                print(
+                    f"  -> ERROR: Failed to save to database. Rolling back. Error: {e}"
+                )
                 session.rollback()
 
     print("--- Stage 1 Complete ---")
@@ -171,17 +191,23 @@ def run_stage_2_file_processing():
         for doc in unprocessed_docs:
             local_path_final = None  # To ensure we can clean up even if a step fails
             local_path_initial = None
-            print(f"\nProcessing Document ID: {doc.id} for Publication ID: {doc.publication_id}")
+            print(
+                f"\nProcessing Document ID: {doc.id} for Publication ID: {doc.publication_id}"
+            )
             try:
                 # a. Download File
                 local_path_initial = download_document_file(doc)
-                
+
                 # b. Convert & Get File Size
-                local_path_final, file_size = analyze_and_prepare_file(local_path_initial)
+                local_path_final, file_size = analyze_and_prepare_file(
+                    local_path_initial
+                )
 
                 # c. Upload to S3
-                s3_url = upload_file_to_s3(local_path_final, doc, s3_client, bucket_name)
-                
+                s3_url = upload_file_to_s3(
+                    local_path_final, doc, s3_client, bucket_name
+                )
+
                 # d. Update Database Record
                 doc.storage_url = s3_url
                 doc.file_size = file_size
@@ -195,14 +221,18 @@ def run_stage_2_file_processing():
                 print("  -> Rolling back transaction and skipping to next document.")
                 session.rollback()
                 continue  # Move to the next document
-            
+
             finally:
                 # e. Cleanup local files
                 if local_path_final and Path(local_path_final).exists():
                     os.remove(local_path_final)
                     print(f"  -> Cleaned up local file: {local_path_final}")
                 # Also clean up the initial .bin if it's different and still exists
-                if local_path_initial and local_path_initial != local_path_final and Path(local_path_initial).exists():
+                if (
+                    local_path_initial
+                    and local_path_initial != local_path_final
+                    and Path(local_path_initial).exists()
+                ):
                     os.remove(local_path_initial)
                     print(f"  -> Cleaned up temp file: {local_path_initial}")
 
@@ -215,24 +245,30 @@ def run_openai_upload():
     Uploads all PDF files to the OpenAI vector store associated with the assistant.
     """
     print("--- Running OpenAI Upload ---")
-    
+
     try:
         import asyncio
         from extract.upload_pdfs_to_openai import main as openai_upload_main
-        
+
         # Run the existing OpenAI upload logic
         asyncio.run(openai_upload_main())
         print("--- OpenAI Upload Complete ---")
-        
+
     except Exception as e:
         print(f"--- OpenAI Upload Failed: {e} ---")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="CCDR Data Pipeline Orchestrator")
-    parser.add_argument('--stage1', action='store_true', help='Run only Stage 1: Metadata Ingestion.')
-    parser.add_argument('--stage2', action='store_true', help='Run only Stage 2: File Processing.')
-    parser.add_argument('--openai', action='store_true', help='Run OpenAI upload after other stages.')
+    parser.add_argument(
+        "--stage1", action="store_true", help="Run only Stage 1: Metadata Ingestion."
+    )
+    parser.add_argument(
+        "--stage2", action="store_true", help="Run only Stage 2: File Processing."
+    )
+    parser.add_argument(
+        "--openai", action="store_true", help="Run OpenAI upload after other stages."
+    )
     args = parser.parse_args()
 
     # Determine which stages to run
@@ -241,12 +277,12 @@ if __name__ == "__main__":
 
     if run_s1:
         run_stage_1_metadata_ingestion()
-    
+
     if run_s2:
         run_stage_2_file_processing()
-    
+
     if args.openai:
         # OpenAI upload runs after the primary stages are complete
         run_openai_upload()
 
-    print("\nWorkflow finished.") 
+    print("\nWorkflow finished.")

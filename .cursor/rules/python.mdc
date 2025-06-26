@@ -11,8 +11,4 @@ Add Python dependencies like:
 uv add pydantic # add --dev flag for development dependencies
 ```
 
-Then run the file with with `uv run`, like:
-
-```bash
-uv run -m transform.1_extract_images
-```
+Then run the file with with `uv run` (or `uv run -m` to run it as a module).

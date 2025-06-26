@@ -4,7 +4,10 @@ import random
 from playwright.sync_api import sync_playwright
 from typing import List, Dict
 
-def get_all_publication_links(base_url: str, total_pages: int = 7) -> List[Dict[str, str]]:
+
+def get_all_publication_links(
+    base_url: str, total_pages: int = 7
+) -> List[Dict[str, str]]:
     """
     Scrapes all pages of the CCDR collection to get publication links.
 
@@ -19,18 +22,18 @@ def get_all_publication_links(base_url: str, total_pages: int = 7) -> List[Dict[
     all_links = []
     all_urls = set()  # Track URLs we've already processed
     max_retries = 3
-    
+
     with sync_playwright() as p:
         browser = p.chromium.launch(
             headless=True,
             args=[
-                '--no-sandbox',
-                '--disable-blink-features=AutomationControlled',
-                '--disable-web-security',
-                '--disable-dev-shm-usage'
-            ]
+                "--no-sandbox",
+                "--disable-blink-features=AutomationControlled",
+                "--disable-web-security",
+                "--disable-dev-shm-usage",
+            ],
         )
-        
+
         # Create context with more realistic browser settings
         context = browser.new_context(
             user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
@@ -48,14 +51,15 @@ def get_all_publication_links(base_url: str, total_pages: int = 7) -> List[Dict[
                 "Sec-Fetch-Mode": "navigate",
                 "Sec-Fetch-Site": "none",
                 "Sec-Fetch-User": "?1",
-                "Cache-Control": "max-age=0"
-            }
+                "Cache-Control": "max-age=0",
+            },
         )
-        
+
         page = context.new_page()
-        
+
         # Hide automation indicators
-        page.add_init_script("""
+        page.add_init_script(
+            """
             Object.defineProperty(navigator, 'webdriver', {
                 get: () => undefined,
             });
@@ -64,76 +68,100 @@ def get_all_publication_links(base_url: str, total_pages: int = 7) -> List[Dict[
             delete window.cdc_adoQpoasnfa76pfcZLmcfl_Array;
             delete window.cdc_adoQpoasnfa76pfcZLmcfl_Promise;
             delete window.cdc_adoQpoasnfa76pfcZLmcfl_Symbol;
-        """)
-        
+        """
+        )
+
         for page_num in range(1, total_pages + 1):
             for attempt in range(1, max_retries + 1):
                 try:
                     # Construct page URL with pagination parameter
                     page_url = f"{base_url}?spc.page={page_num}"
                     print(f"\nProcessing page {page_num} of {total_pages}")
-                    
+
                     # Wait between page requests to avoid rate limiting
                     if page_num > 1 or attempt > 1:
-                        wait_time = random.uniform(5, 10)  # Random wait between 5-10 seconds
+                        wait_time = random.uniform(
+                            5, 10
+                        )  # Random wait between 5-10 seconds
                         print(f"Waiting {wait_time:.1f} seconds before next request...")
                         time.sleep(wait_time)
-                    
+
                     # Extract publications from this page
-                    page_publications = extract_publication_links_from_page(page, page_url)
-                    
+                    page_publications = extract_publication_links_from_page(
+                        page, page_url
+                    )
+
                     # Check if we were successful or rate limited
                     if page_publications is None:
-                        print(f"Failed attempt {attempt}/{max_retries} for page {page_num}")
-                        
+                        print(
+                            f"Failed attempt {attempt}/{max_retries} for page {page_num}"
+                        )
+
                         if attempt == max_retries:
-                            print(f"Maximum retries reached for page {page_num}. Moving to next page.")
+                            print(
+                                f"Maximum retries reached for page {page_num}. Moving to next page."
+                            )
                             break
-                            
+
                         # Wait longer before retry
                         wait_time = random.uniform(15, 30)
-                        print(f"Rate limited. Waiting {wait_time:.1f} seconds before retry...")
+                        print(
+                            f"Rate limited. Waiting {wait_time:.1f} seconds before retry..."
+                        )
                         time.sleep(wait_time)
                         continue
-                    
+
                     # Process publications found on this page
                     new_count = 0
                     for pub in page_publications:
                         # Only add if we haven't seen this URL before
                         if pub["url"] not in all_urls:
                             all_urls.add(pub["url"])
-                            all_links.append({
-                                "title": pub["title"],
-                                "url": pub["url"],
-                                "source": "World Bank Open Knowledge Repository",
-                                "page_found": page_num
-                            })
+                            all_links.append(
+                                {
+                                    "title": pub["title"],
+                                    "url": pub["url"],
+                                    "source": "World Bank Open Knowledge Repository",
+                                    "page_found": page_num,
+                                }
+                            )
                             new_count += 1
-                    
-                    print(f"Found {len(page_publications)} publications on page {page_num}, {new_count} are new")
-                    print(f"Total unique publications collected so far: {len(all_links)}")
-                    
+
+                    print(
+                        f"Found {len(page_publications)} publications on page {page_num}, {new_count} are new"
+                    )
+                    print(
+                        f"Total unique publications collected so far: {len(all_links)}"
+                    )
+
                     # Successfully processed this page, move to next
                     break
-                    
+
                 except Exception as e:
-                    print(f"Error during processing of page {page_num} (attempt {attempt}/{max_retries}): {str(e)}")
-                    
+                    print(
+                        f"Error during processing of page {page_num} (attempt {attempt}/{max_retries}): {str(e)}"
+                    )
+
                     if attempt == max_retries:
-                        print(f"Maximum retries reached for page {page_num}. Moving to next page.")
+                        print(
+                            f"Maximum retries reached for page {page_num}. Moving to next page."
+                        )
                         break
-                        
+
                     # Wait before retry
                     wait_time = random.uniform(10, 20)
-                    print(f"Error encountered. Waiting {wait_time:.1f} seconds before retry...")
+                    print(
+                        f"Error encountered. Waiting {wait_time:.1f} seconds before retry..."
+                    )
                     time.sleep(wait_time)
-        
+
         browser.close()
-    
+
     print(f"\nCompleted extraction from {total_pages} pages")
     print(f"Total unique publications collected: {len(all_links)}")
-    
+
     return all_links
+
 
 def extract_publication_links_from_page(page, url):
     """
@@ -142,39 +170,42 @@ def extract_publication_links_from_page(page, url):
     """
     print(f"Navigating to: {url}")
     response = page.goto(url, wait_until="domcontentloaded")
-    
+
     # Check if we got rate limited
     if response.status == 429:
         print(f"Rate limited (429 status).")
         return None
-    
+
     # Wait for the page to load
     page.wait_for_load_state("networkidle")
-    
+
     # Wait for content to appear - this replaces the hardcoded delays
     print("Waiting for page content to load...")
     try:
         # Wait for publication links or other content indicators
-        page.wait_for_selector('a[href*="/publication/"], .pagination, .search-results, .item', timeout=8000)
+        page.wait_for_selector(
+            'a[href*="/publication/"], .pagination, .search-results, .item',
+            timeout=8000,
+        )
         print("Page content loaded")
     except Exception as e:
         print(f"Content loading timeout (continuing anyway): {e}")
-    
+
     # Handle cookie consent banner if present
     print("Checking for cookie consent banner...")
     try:
         # Look for common cookie consent elements
         consent_selectors = [
             'button:has-text("Accept")',
-            'button:has-text("That\'s ok")', 
+            'button:has-text("That\'s ok")',
             'button:has-text("OK")',
             'button:has-text("Agree")',
             'button:has-text("Continue")',
             '[data-testid="accept-cookies"]',
-            '.cookie-accept',
-            '#accept-cookies'
+            ".cookie-accept",
+            "#accept-cookies",
         ]
-        
+
         for selector in consent_selectors:
             try:
                 consent_button = page.locator(selector).first
@@ -182,131 +213,140 @@ def extract_publication_links_from_page(page, url):
                     print(f"Found consent button with selector: {selector}")
                     consent_button.click()
                     print("Clicked consent button")
-                    
+
                     # Wait for page to stabilize after consent
                     try:
                         page.wait_for_load_state("networkidle", timeout=5000)
                         print("Page stabilized after consent")
                     except Exception as e:
                         print(f"Timeout waiting for page to stabilize: {e}")
-                    
+
                     break
             except Exception as e:
                 print(f"Error with consent selector {selector}: {e}")
                 continue
         else:
             print("No consent button found")
-            
+
     except Exception as e:
         print(f"Error handling consent banner: {e}")
-    
+
     # Check page title for common error indicators
     title = page.title()
     print(f"Page title: {title}")
-    
+
     if "429" in title or "too many requests" in title.lower():
         print(f"Detected rate limiting in title.")
         return None
-    
+
     # Use Playwright's Python API to extract publication links
     print("Extracting publication links...")
-    
+
     # Find all links containing '/publication/' in their href
     publication_links = page.locator('a[href*="/publication/"]')
     link_count = publication_links.count()
     print(f"Found {link_count} publication links on page")
-    
+
     if link_count == 0:
         print("No publication links found.")
         return []
-    
+
     # Track unique URLs to avoid duplicates
     link_map = {}
-    skip_texts = {'download', 'view', 'pdf', 'read'}
-    
+    skip_texts = {"download", "view", "pdf", "read"}
+
     # Process each link
     for i in range(link_count):
         try:
             link = publication_links.nth(i)
-            href = link.get_attribute('href')
-            
+            href = link.get_attribute("href")
+
             if not href:
                 continue
-                
+
             # Convert relative URLs to absolute
-            if href.startswith('/'):
+            if href.startswith("/"):
                 href = f"https://openknowledge.worldbank.org{href}"
-            
+
             # Initialize entry if URL hasn't been seen
             if href not in link_map:
                 link_map[href] = {
-                    'url': href,
-                    'titles': [],
+                    "url": href,
+                    "titles": [],
                 }
-            
+
             # Get link text
             try:
                 link_text = link.inner_text().strip()
                 if link_text and link_text.lower() not in skip_texts:
-                    link_map[href]['titles'].append(link_text)
+                    link_map[href]["titles"].append(link_text)
             except Exception:
                 pass  # Skip if can't get text
-            
+
             # Try to find title from parent containers
             try:
                 # Look for parent elements that might contain the title
-                parent_selectors = ['li', '.item', '.publication-item', '.result-item']
-                
+                parent_selectors = ["li", ".item", ".publication-item", ".result-item"]
+
                 for selector in parent_selectors:
                     try:
-                        parent = link.locator(f'xpath=ancestor::{selector.replace(".", "")}[1]')
+                        parent = link.locator(
+                            f'xpath=ancestor::{selector.replace(".", "")}[1]'
+                        )
                         if parent.count() > 0:
                             # Try common title selectors within the parent
-                            title_selectors = ['h1', 'h2', 'h3', 'h4', 'h5', '.title', '.item-title']
+                            title_selectors = [
+                                "h1",
+                                "h2",
+                                "h3",
+                                "h4",
+                                "h5",
+                                ".title",
+                                ".item-title",
+                            ]
                             for title_selector in title_selectors:
                                 try:
                                     title_elem = parent.locator(title_selector).first
                                     if title_elem.count() > 0:
                                         title_text = title_elem.inner_text().strip()
                                         if title_text and len(title_text) > 3:
-                                            link_map[href]['titles'].append(title_text)
+                                            link_map[href]["titles"].append(title_text)
                                             break
                                 except Exception:
                                     continue
                             break
                     except Exception:
                         continue
-                        
+
             except Exception:
                 pass  # Skip if can't find parent title
-                
+
         except Exception as e:
             print(f"Error processing link {i}: {e}")
             continue
-    
+
     # Process the results to select the best title for each URL
     results = []
     for url, data in link_map.items():
         # Sort titles by length (longer titles often have more information)
-        sorted_titles = sorted(data['titles'], key=len, reverse=True)
-        
+        sorted_titles = sorted(data["titles"], key=len, reverse=True)
+
         # Select the longest title that's substantial
-        best_title = next((title for title in sorted_titles if len(title) > 3), "Unknown Title")
-        
-        results.append({
-            'url': url,
-            'title': best_title,
-            'allTitles': data['titles']
-        })
-    
+        best_title = next(
+            (title for title in sorted_titles if len(title) > 3), "Unknown Title"
+        )
+
+        results.append({"url": url, "title": best_title, "allTitles": data["titles"]})
+
     print(f"Extracted {len(results)} unique publications from page")
     return results
+
 
 if __name__ == "__main__":
     # Example usage of the main function
     base_url = "https://openknowledge.worldbank.org/collections/5cd4b6f6-94bb-5996-b00c-58be279093de"
     all_links = get_all_publication_links(base_url, total_pages=7)
-    
+
     print(f"Extracted {len(all_links)} publication links:")
     for i, link in enumerate(all_links[:5]):  # Show first 5 as example
         print(f"{i+1}. {link['title']}")
