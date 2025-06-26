@@ -1,19 +1,16 @@
-import json
 import time
 import random
 from playwright.sync_api import sync_playwright
 from typing import List, Dict
 
 
-def get_all_publication_links(
-    base_url: str, total_pages: int = 7
-) -> List[Dict[str, str]]:
+def get_all_publication_links(base_url: str) -> List[Dict[str, str]]:
     """
     Scrapes all pages of the CCDR collection to get publication links.
+    Continues until "Your search returned no results" is found.
 
     Args:
         base_url: The base URL of the CCDR collection.
-        total_pages: The number of pages to scrape.
 
     Returns:
         A list of dictionaries, where each dict has "title" and "url".
@@ -71,12 +68,13 @@ def get_all_publication_links(
         """
         )
 
-        for page_num in range(1, total_pages + 1):
+        page_num = 1
+        while True:
             for attempt in range(1, max_retries + 1):
                 try:
                     # Construct page URL with pagination parameter
                     page_url = f"{base_url}?spc.page={page_num}"
-                    print(f"\nProcessing page {page_num} of {total_pages}")
+                    print(f"\nProcessing page {page_num}")
 
                     # Wait between page requests to avoid rate limiting
                     if page_num > 1 or attempt > 1:
@@ -87,12 +85,10 @@ def get_all_publication_links(
                         time.sleep(wait_time)
 
                     # Extract publications from this page
-                    page_publications = extract_publication_links_from_page(
-                        page, page_url
-                    )
+                    result = extract_publication_links_from_page(page, page_url)
 
                     # Check if we were successful or rate limited
-                    if page_publications is None:
+                    if result is None:
                         print(
                             f"Failed attempt {attempt}/{max_retries} for page {page_num}"
                         )
@@ -111,6 +107,13 @@ def get_all_publication_links(
                         time.sleep(wait_time)
                         continue
 
+                    # Check if we reached the end (no results found)
+                    if result == "no_results":
+                        print("Reached end of results - 'Your search returned no results' found")
+                        break  # Exit the retry loop
+
+                    page_publications = result
+
                     # Process publications found on this page
                     new_count = 0
                     for pub in page_publications:
@@ -128,7 +131,7 @@ def get_all_publication_links(
                             new_count += 1
 
                     print(
-                        f"Found {len(page_publications)} publications on page {page_num}, {new_count} are new"
+                        f"Found {len(page_publications)} publications on page {page_num}"
                     )
                     print(
                         f"Total unique publications collected so far: {len(all_links)}"
@@ -155,9 +158,16 @@ def get_all_publication_links(
                     )
                     time.sleep(wait_time)
 
+            # Check if we found "no results" and should exit the main loop
+            if result == "no_results":
+                break
+
+            # Increment page number for next iteration
+            page_num += 1
+
         browser.close()
 
-    print(f"\nCompleted extraction from {total_pages} pages")
+    print(f"\nCompleted extraction from {page_num} pages")
     print(f"Total unique publications collected: {len(all_links)}")
 
     return all_links
@@ -239,6 +249,15 @@ def extract_publication_links_from_page(page, url):
         print(f"Detected rate limiting in title.")
         return None
 
+    # Check if we've reached the end of results
+    try:
+        no_results_text = page.locator('text="Your search returned no results"')
+        if no_results_text.count() > 0:
+            print("Found 'Your search returned no results' - reached end of pagination")
+            return "no_results"
+    except Exception as e:
+        print(f"Error checking for no results text: {e}")
+
     # Use Playwright's Python API to extract publication links
     print("Extracting publication links...")
 
@@ -248,8 +267,8 @@ def extract_publication_links_from_page(page, url):
     print(f"Found {link_count} publication links on page")
 
     if link_count == 0:
-        print("No publication links found.")
-        return []
+        print("No publication links found - likely reached end of results.")
+        return "no_results"
 
     # Track unique URLs to avoid duplicates
     link_map = {}
@@ -345,7 +364,7 @@ def extract_publication_links_from_page(page, url):
 if __name__ == "__main__":
     # Example usage of the main function
     base_url = "https://openknowledge.worldbank.org/collections/5cd4b6f6-94bb-5996-b00c-58be279093de"
-    all_links = get_all_publication_links(base_url, total_pages=7)
+    all_links = get_all_publication_links(base_url)
 
     print(f"Extracted {len(all_links)} publication links:")
     for i, link in enumerate(all_links[:5]):  # Show first 5 as example
