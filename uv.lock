@@ -719,7 +719,7 @@ requires-dist = [
     { name = "argparse", specifier = ">=1.4.0" },
     { name = "asyncio", specifier = ">=3.4.3" },
     { name = "boto3", specifier = ">=1.38.41" },
-    { name = "langcodes", extras = ["data"], specifier = ">=3.5.0" },
+    { name = "langcodes", specifier = ">=3.5.0" },
     { name = "litellm", specifier = ">=1.65.1" },
     { name = "openai", specifier = ">=1.69.0" },
     { name = "playwright", specifier = ">=1.51.0" },

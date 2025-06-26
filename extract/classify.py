@@ -95,6 +95,29 @@ def classify_download_link(text: str, position: int = 0) -> Dict[str, Any]:
     """
     text_lower = text.lower()
 
+    # Check for file type first - we only want PDF files
+    # Look for explicit non-PDF indicators
+    non_pdf_indicators = [
+        " text ",
+        ".txt",
+        ".doc",
+        ".docx", 
+        ".html",
+        ".xml",
+        ".csv",
+        ".xlsx",
+        ".xls"
+    ]
+    
+    if any(indicator in text_lower for indicator in non_pdf_indicators):
+        return {
+            "should_download": False,
+            "classification": "non-pdf-file",
+            "priority": 999,
+            "language_detected": None,
+            "reasoning": f"Non-PDF file type detected in: {text}",
+        }
+
     # Check for non-English language first
     detected_lang = detect_language_in_text(text)
     if detected_lang:
@@ -418,6 +441,7 @@ if __name__ == "__main__":
         {"url": "test3.pdf", "text": "English PDF (2.86 MB)"},
         {"url": "test4.pdf", "text": "Vietnamese PDF (3.59 MB)"},
         {"url": "test5.pdf", "text": "Vietnamese PDF (3.56 MB)"},
+        {"url": "test6.txt", "text": "English Summary Text (88.61 KB)"},
     ]
 
     result = classify_download_links(test_links, "Test Publication", "test_url")
