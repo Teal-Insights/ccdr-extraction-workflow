@@ -292,6 +292,26 @@ def filter_and_prioritize_links(
     return downloadable
 
 
+def map_classification_to_document_type(classification: str) -> str:
+    """
+    Maps classification string to DocumentType enum value.
+    
+    Args:
+        classification: Classification string like 'main-english-pdf', 'supplementary-english', etc.
+        
+    Returns:
+        Document type string: 'MAIN', 'SUPPLEMENTAL', or 'OTHER'
+    """
+    classification_lower = classification.lower()
+    
+    if "main" in classification_lower:
+        return "MAIN"
+    elif "supplement" in classification_lower:
+        return "SUPPLEMENTAL" 
+    else:
+        return "OTHER"
+
+
 def log_classification_results(
     download_links: List[Dict[str, Any]],
     publication_title: str,
@@ -380,9 +400,12 @@ def classify_download_links(
     print(f"  Downloadable: {len(downloadable_links)}")
     print(f"  Skipped: {len(links) - len(downloadable_links)}")
 
-    # Mark which ones to download
+    # Mark which ones to download and add document type
     for link in links:
         link["to_download"] = link["classification"]["should_download"]
+        # Add the type field needed for database upload
+        if link["to_download"]:
+            link["type"] = map_classification_to_document_type(link["classification"]["classification"])
 
     return links
 
@@ -401,4 +424,6 @@ if __name__ == "__main__":
     print("\nClassification results:")
     for link in result:
         print(f"  {link['text']} -> {'DOWNLOAD' if link['to_download'] else 'SKIP'}")
+        if link['to_download']:
+            print(f"    Type: {link['type']}")
         print(f"    {link['classification']['reasoning']}")
