@@ -23,7 +23,7 @@ from pathlib import Path
 from sqlmodel import Session, select
 from dotenv import load_dotenv
 
-from extract.db import engine
+from extract.db import engine, check_schema_sync
 from extract.schema import Publication, Document
 from extract.extract_publication_links import get_all_publication_links
 from extract.extract_publication_details import scrape_publication_details
@@ -270,6 +270,11 @@ if __name__ == "__main__":
         "--openai", action="store_true", help="Run OpenAI upload after other stages."
     )
     args = parser.parse_args()
+
+    # Check schema synchronization first
+    if not check_schema_sync():
+        print("\n❌ Schema synchronization failed. Please resolve schema differences before proceeding.")
+        exit(1)
 
     # Determine which stages to run
     run_s1 = args.stage1 or (not args.stage1 and not args.stage2)
