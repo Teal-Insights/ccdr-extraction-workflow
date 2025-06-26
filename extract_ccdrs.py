@@ -99,8 +99,12 @@ def run_stage_1_metadata_ingestion():
                 
             pub_details["downloadLinks"] = valid_links
 
-            # c. Classify Links using Rules
-            pub_details["downloadLinks"] = classify_download_links(pub_details["downloadLinks"])
+            # c. Classify Links
+            pub_details["downloadLinks"] = classify_download_links(
+                pub_details["downloadLinks"], 
+                pub_details.get("title", "Unknown Title"),
+                pub_details.get("source_url", "Unknown URL")
+            )
             
             # Add metadata from the original link info
             pub_details["source"] = link_info.get("source", "World Bank Open Knowledge Repository")

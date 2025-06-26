@@ -174,11 +174,33 @@ def scrape_publication_details(url: str) -> Optional[Dict[str, Any]]:
                 print(f"Error extracting URI: {e}")
                 publication_data['uri'] = None
             
-            # Get download links
+            # Get download links with enhanced functionality
             try:
                 download_links = []
+                
+                # First, try to click SHOW MORE button if present
+                try:
+                    show_more_button = page.locator('a:has-text("SHOW MORE")')
+                    if show_more_button.count() > 0 and show_more_button.is_visible():
+                        print("Found SHOW MORE button, clicking...")
+                        show_more_button.click()
+                        
+                        # Wait for content to load
+                        import time
+                        time.sleep(2)
+                        try:
+                            page.wait_for_load_state("networkidle", timeout=10000)
+                        except:
+                            pass  # Continue even if timeout
+                        
+                        print("Successfully clicked SHOW MORE button")
+                except Exception as e:
+                    print(f"Error trying to click SHOW MORE button: {e}")
+                
+                # Extract all download links
                 bitstream_links = page.locator('a[href*="/bitstreams/"]')
                 link_count = bitstream_links.count()
+                print(f"Found {link_count} download links")
                 
                 for i in range(link_count):
                     link = bitstream_links.nth(i)
