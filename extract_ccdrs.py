@@ -26,7 +26,7 @@ from dotenv import load_dotenv
 from extract.db import engine, check_schema_sync
 from extract.schema import Publication, Document
 from extract.extract_publication_links import get_all_publication_links
-from extract.extract_publication_details import scrape_publication_details
+from extract.extract_publication_details import scrape_publication_details_with_retry
 from extract.classify_file_types import get_file_type_from_url
 from extract.classify import classify_download_links
 from extract.upload_pubs_to_db import persist_publication
@@ -75,7 +75,7 @@ def run_stage_1_metadata_ingestion():
             print(f"\nProcessing new publication: {link_info['title']}")
 
             # a. Scrape Details
-            pub_details = scrape_publication_details(link_info["url"])
+            pub_details = scrape_publication_details_with_retry(link_info["url"])
             if not pub_details or not pub_details.get("downloadLinks"):
                 print(
                     f"  -> Failed to scrape details or no download links found. Skipping."
