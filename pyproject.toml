@@ -9,6 +9,7 @@ dependencies = [
     "asyncio>=3.4.3",
     "boto3>=1.38.41",
     "google-genai>=1.9.0",
+    "langcodes[data]>=3.5.0",
     "litellm>=1.65.1",
     "nanoid>=2.0.0",
     "numpy>=2.2.4",

@@ -182,12 +182,101 @@ def scrape_all_publications(input_file, output_file, max_retries=3):
                         print(f"Waiting {wait_time:.1f} seconds before next request...")
                         time.sleep(wait_time)
                     
-                    # Extract publication details
-                    publication_details = extract_publication_details(page, pub["url"])
-                    
-                    # Check if we were successful or rate limited
-                    if publication_details is None:
-                        print(f"Failed attempt {attempt}/{max_retries} for publication {index + 1}")
+                    for i in range(heading_count):
+                        heading = headings.nth(i)
+                        if heading.inner_text().strip() == label:
+                            # Found the heading, now find the next sibling with content
+                            try:
+                                # Try to find the next element with content
+                                parent = heading.locator('xpath=..')
+                                following_elements = parent.locator(f'xpath=.//*[normalize-space(text()) != ""][position() > count(h5[normalize-space(text()) = "{label}"]/preceding-sibling::*) + 1]')
+                                
+                                if following_elements.count() > 0:
+                                    content = following_elements.first.inner_text().strip()
+                                    return content if content else None
+                                
+                                # Fallback: try next sibling elements
+                                next_sibling = heading.locator('xpath=following-sibling::*[1]')
+                                if next_sibling.count() > 0:
+                                    content = next_sibling.inner_text().strip()
+                                    return content if content else None
+                                    
+                            except Exception:
+                                pass
+                    return None
+                except Exception as e:
+                    print(f"Error getting field value for {label}: {e}")
+                    return None
+            
+            # Extract field values
+            publication_data['abstract'] = get_field_value('Abstract')
+            publication_data['citation'] = get_field_value('Citation')
+            
+            # Get URI - special handling to extract the link
+            try:
+                uri = None
+                headings = page.locator('h5')
+                heading_count = headings.count()
+                
+                for i in range(heading_count):
+                    heading = headings.nth(i)
+                    if heading.inner_text().strip() == 'URI':
+                        # Find the link in the following content
+                        try:
+                            parent = heading.locator('xpath=..')
+                            uri_links = parent.locator('a')
+                            uri_link_count = uri_links.count()
+                            
+                            for j in range(uri_link_count):
+                                link = uri_links.nth(j)
+                                href = link.get_attribute('href')
+                                if href and ('hdl.handle.net' in href or 'doi.org' in href):
+                                    uri = href
+                                    break
+                        except Exception:
+                            pass
+                        break
+                
+                publication_data['uri'] = uri
+            except Exception as e:
+                print(f"Error extracting URI: {e}")
+                publication_data['uri'] = None
+            
+            # Get download links with enhanced functionality
+            try:
+                download_links = []
+                
+                # First, try to click SHOW MORE button if present
+                try:
+                    show_more_button = page.locator('a:has-text("SHOW MORE")')
+                    if show_more_button.count() > 0 and show_more_button.is_visible():
+                        print("Found SHOW MORE button, clicking...")
+                        show_more_button.click()
+                        
+                        # Wait for content to load
+                        import time
+                        time.sleep(2)
+                        try:
+                            page.wait_for_load_state("networkidle", timeout=10000)
+                        except:
+                            pass  # Continue even if timeout
+                        
+                        print("Successfully clicked SHOW MORE button")
+                except Exception as e:
+                    print(f"Error trying to click SHOW MORE button: {e}")
+                
+                # Extract all download links
+                bitstream_links = page.locator('a[href*="/bitstreams/"]')
+                link_count = bitstream_links.count()
+                print(f"Found {link_count} download links")
+                
+                for i in range(link_count):
+                    link = bitstream_links.nth(i)
+                    try:
+                        url_attr = link.get_attribute('href')
+                        if not url_attr:
+                            continue  # Skip links without URLs
+                        url = url_attr  # Now url is guaranteed to be str
                         
                         if attempt == max_retries:
                             print(f"Maximum retries reached for publication {index + 1}. Moving to next.")
