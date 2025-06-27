@@ -18,21 +18,23 @@ Arguments:
 """
 
 import os
+import time
+import random
 from typing import List, Optional
 from pathlib import Path
 from sqlmodel import Session, select
 from dotenv import load_dotenv
 
-from extract.db import engine, check_schema_sync
-from extract.schema import Publication, Document
+from load.db import engine, check_schema_sync
+from load.schema import Publication, Document
 from extract.extract_publication_links import get_all_publication_links, PublicationLink
 from extract.extract_publication_details import scrape_publication_details_with_retry, PublicationDetails
 from extract.classify_mime_types import get_file_type_from_url, PublicationDetailsWithFileInfo
 from extract.classify_document_types import classify_download_links, PublicationDetailsWithClassification
-from extract.upload_pubs_to_db import persist_publication
+from load.upload_pubs_to_db import persist_publication
 from extract.download_files import download_document_file
 from extract.convert_bin_files import analyze_and_prepare_file
-from extract.upload_pdfs_to_aws_s3 import get_s3_client, upload_file_to_s3
+from load.upload_pdfs_to_aws_s3 import get_s3_client, upload_file_to_s3
 
 load_dotenv(override=True)
 
@@ -71,8 +73,14 @@ def run_stage_1_metadata_ingestion() -> None:
             return
 
         # 3. Process Each New Publication
-        for link_info in new_links_to_process:
+        for idx, link_info in enumerate(new_links_to_process):
             print(f"\nProcessing new publication: {link_info.title}")
+
+            # Add a polite delay between requests (except for the first one)
+            if idx > 0:
+                delay = random.uniform(3.0, 7.0)  # 3-7 seconds between requests
+                print(f"Waiting {delay:.1f}s before next request to be respectful...")
+                time.sleep(delay)
 
             # a. Scrape Details
             pub_details: Optional[PublicationDetails] = scrape_publication_details_with_retry(link_info.url)
@@ -220,7 +228,7 @@ def run_openai_upload() -> None:
 
     try:
         import asyncio
-        from extract.upload_pdfs_to_openai import main as openai_upload_main
+        from load.upload_pdfs_to_openai import main as openai_upload_main
 
         # Run the existing OpenAI upload logic
         asyncio.run(openai_upload_main())

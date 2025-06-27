@@ -7,13 +7,13 @@ alwaysApply: true
 
 This project uses `uv` to manage dependencies and run Python files.
 
-Add Python dependencies like:
+Add Python dependencies to the workspace like:
 
 ```bash
 uv add pydantic # add --dev flag for development dependencies
 ```
 
-Then run the file with with `uv run` (or `uv run -m` to run it as a module).
+Then run the file as a module with `uv run -m`.
 
 # Python programming patterns
 

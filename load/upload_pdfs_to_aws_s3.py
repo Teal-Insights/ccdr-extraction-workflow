@@ -29,12 +29,7 @@ from botocore.exceptions import ClientError, NoCredentialsError, TokenRetrievalE
 from dotenv import load_dotenv
 import logging
 
-# Add the Document import for the new utility function
-try:
-    from .schema import Document
-except ImportError:
-    # Fallback for when running as main module
-    from extract.schema import Document
+from load.schema import Document
 
 # Load environment variables
 load_dotenv()

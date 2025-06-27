@@ -12,7 +12,7 @@ import re
 from typing import List, Optional
 import langcodes
 
-from extract.schema import DocumentType
+from load.schema import DocumentType
 from extract.extract_publication_details import PublicationDetailsBase
 from extract.classify_mime_types import DownloadLinkWithFileInfo
 

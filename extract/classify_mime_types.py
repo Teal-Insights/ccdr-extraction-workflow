@@ -2,7 +2,7 @@ import requests
 import re
 import time
 import random
-from typing import Optional, List
+from typing import List
 from pydantic import BaseModel, HttpUrl
 from extract.extract_publication_details import DownloadLink, PublicationDetailsBase
 

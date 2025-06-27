@@ -1,7 +1,7 @@
 import time
 import random
 from playwright.sync_api import sync_playwright
-from typing import List, Dict
+from typing import List
 from pydantic import BaseModel, HttpUrl
 
 

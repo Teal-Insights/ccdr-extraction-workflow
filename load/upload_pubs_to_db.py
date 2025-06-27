@@ -3,7 +3,7 @@ from datetime import datetime, date
 from sqlmodel import Session
 
 from extract.classify_document_types import PublicationDetailsWithClassification
-from extract.schema import Publication, Document, DocumentType
+from load.schema import Publication, Document, DocumentType
 
 
 def persist_publication(pub_data: PublicationDetailsWithClassification, session: Session) -> Publication:

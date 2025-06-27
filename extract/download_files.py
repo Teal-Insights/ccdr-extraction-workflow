@@ -7,13 +7,7 @@ import mimetypes
 import time
 import random
 from typing import Optional
-
-# Add the Document import for the new utility function
-try:
-    from .schema import Document
-except ImportError:
-    # Fallback for when running as main module
-    from extract.schema import Document
+from load.schema import Document
 
 
 def ensure_directory(path):
