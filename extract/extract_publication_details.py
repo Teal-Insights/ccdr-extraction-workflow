@@ -38,15 +38,15 @@ class PublicationDetails(PublicationDetailsBase):
     download_links: List[DownloadLink] = []
 
 
-def scrape_publication_details_with_retry(url: HttpUrl, max_retries: int = 3, base_delay: float = 5.0, max_delay: float = 300.0) -> Optional[PublicationDetails]:
+def scrape_publication_details_with_retry(url: HttpUrl, max_retries: int = 5, base_delay: float = 10.0, max_delay: float = 900.0) -> Optional[PublicationDetails]:
     """
     Scrapes publication details with robust retry logic and exponential backoff.
     
     Args:
         url: The URL of the publication's detail page.
         max_retries: Maximum number of retry attempts (default: 5)
-        base_delay: Base delay in seconds between retries (default: 5.0)
-        max_delay: Maximum delay in seconds to cap exponential backoff (default: 300.0)
+        base_delay: Base delay in seconds between retries (default: 10.0)
+        max_delay: Maximum delay in seconds to cap exponential backoff (default: 900.0 = 15 minutes)
     
     Returns:
         A PublicationDetails object containing all scraped metadata, or None if all attempts fail.
@@ -72,10 +72,9 @@ def scrape_publication_details_with_retry(url: HttpUrl, max_retries: int = 3, ba
                 print(f"Success on attempt {attempt + 1}")
             
             # Add a brief pause after successful request to be respectful
-            if attempt > 0:  # Only pause if this was a retry (not first attempt)
-                brief_pause = random.uniform(1.0, 3.0)
-                print(f"Adding brief pause of {brief_pause:.1f}s after successful retry...")
-                time.sleep(brief_pause)
+            brief_pause = random.uniform(2.0, 5.0)  # Always add some delay between requests
+            print(f"Adding brief pause of {brief_pause:.1f}s after successful request...")
+            time.sleep(brief_pause)
             
             return result
         
@@ -84,6 +83,7 @@ def scrape_publication_details_with_retry(url: HttpUrl, max_retries: int = 3, ba
             print(f"Attempt {attempt + 1} failed, will retry...")
         else:
             print(f"All {max_retries + 1} attempts failed for {url}")
+            print("Consider waiting longer before retrying this URL, or check if the server is blocking requests")
     
     return None
 
@@ -398,15 +398,26 @@ def scrape_publication_details(url: HttpUrl) -> Optional[PublicationDetails]:
                 error_msg = str(e)
                 print(f"Error during scraping of {url}: {error_msg}")
                 
-                # Check for connection-related errors that indicate rate limiting
-                connection_errors = [
+                # Check for connection-related errors that indicate rate limiting or temporary issues
+                temporary_errors = [
                     "ERR_CONNECTION_REFUSED", "ERR_CONNECTION_RESET", "ERR_CONNECTION_FAILED",
                     "ERR_NETWORK_CHANGED", "ERR_TIMED_OUT", "net::", "Connection refused",
-                    "Connection reset", "Timeout"
+                    "Connection reset", "Timeout", "429", "503", "502", "504"
                 ]
                 
-                if any(conn_err in error_msg for conn_err in connection_errors):
-                    print("Detected connection/network error - likely rate limiting")
+                # Check for permanent errors that shouldn't be retried
+                permanent_errors = [
+                    "404", "Not Found", "ERR_NAME_NOT_RESOLVED", "ERR_INVALID_URL"
+                ]
+                
+                is_temporary_error = any(temp_err in error_msg for temp_err in temporary_errors)
+                is_permanent_error = any(perm_err in error_msg for perm_err in permanent_errors)
+                
+                if is_permanent_error:
+                    print("Detected permanent error - will not retry")
+                    return None
+                elif is_temporary_error:
+                    print("Detected temporary error - likely rate limiting or server issues")
                 
                 return None
                 
