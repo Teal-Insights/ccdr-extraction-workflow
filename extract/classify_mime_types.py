@@ -32,7 +32,6 @@ class FileTypeInfo(BaseModel):
 
     mime_type: str
     charset: str
-    content_length: Optional[int]  # Can be int or "unknown"/"error"
 
 
 class DownloadLinkWithFileInfo(DownloadLink):
@@ -157,14 +156,7 @@ def get_file_type_from_url(download_link: DownloadLink, max_retries=3) -> Downlo
                 content_type = response.headers.get("Content-Type", "unknown")
                 parsed_header = parse_content_type(content_type)
 
-                # Get content length if available
-                content_length_str = response.headers.get("Content-Length", None)
-                # Convert to int if it's a valid number
-                if content_length_str is not None:
-                    try:
-                        content_length = int(content_length_str)
-                    except ValueError:
-                        content_length = None
+
 
                 # If we're still getting JSON content type or HTML, try to peek at actual content
                 if (
@@ -203,7 +195,6 @@ def get_file_type_from_url(download_link: DownloadLink, max_retries=3) -> Downlo
                 result = FileTypeInfo(
                     mime_type=mime_type,
                     charset=charset,
-                    content_length=content_length,
                 )
 
                 # If we got HTML when expecting PDF/text, consider it a failure

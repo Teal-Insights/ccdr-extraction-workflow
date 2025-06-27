@@ -82,7 +82,9 @@ def detect_language_in_text(text: str) -> Optional[str]:
     return None
 
 
-def classify_download_link(input: DownloadLinkWithFileInfo, position: int = 0) -> Optional[DownloadLinkWithClassification]:
+def classify_download_link(
+    input: DownloadLinkWithFileInfo, position: int = 0, verbose: bool = False
+) -> Optional[DownloadLinkWithClassification]:
     """
     Classify a single download link.
 
@@ -104,8 +106,9 @@ def classify_download_link(input: DownloadLinkWithFileInfo, position: int = 0) -
 
     # Check for main report indicators
     main_indicators = ["main report", "full report", "complete report"]
+    result: DownloadLinkWithClassification
     if any(indicator in text_lower for indicator in main_indicators):
-        return DownloadLinkWithClassification(
+        result = DownloadLinkWithClassification(
             url=input.url,
             text=input.text,
             file_info=input.file_info,
@@ -113,9 +116,8 @@ def classify_download_link(input: DownloadLinkWithFileInfo, position: int = 0) -
             language_detected=detected_lang,
             reasoning="Explicitly labeled as main/full/complete report",
         )
-
-    if any(indicator in text_lower for indicator in SUPPLEMENTARY_INDICATORS):
-        return DownloadLinkWithClassification(
+    elif any(indicator in text_lower for indicator in SUPPLEMENTARY_INDICATORS):
+        result = DownloadLinkWithClassification(
             url=input.url,
             text=input.text,
             file_info=input.file_info,
@@ -125,8 +127,8 @@ def classify_download_link(input: DownloadLinkWithFileInfo, position: int = 0) -
         )
 
     # For "English PDF" without specific indicators, use position heuristic
-    if "english" in text_lower:
-        return DownloadLinkWithClassification(
+    elif "english" in text_lower:
+        result = DownloadLinkWithClassification(
             url=input.url,
             text=input.text,
             file_info=input.file_info,
@@ -140,7 +142,8 @@ def classify_download_link(input: DownloadLinkWithFileInfo, position: int = 0) -
         )
 
     # Default case - no explicit language or PDF specified
-    return DownloadLinkWithClassification(
+    else:
+        result = DownloadLinkWithClassification(
         url=input.url,
         text=input.text,
         file_info=input.file_info,
@@ -153,9 +156,15 @@ def classify_download_link(input: DownloadLinkWithFileInfo, position: int = 0) -
         )
     )
 
+    if verbose:
+        print(f"Classification result: {result.model_dump_json(indent=2)}")
+
+    return result
+
 
 def classify_download_links(
-    download_links: List[DownloadLinkWithFileInfo]
+    download_links: List[DownloadLinkWithFileInfo],
+    verbose: bool = False,
 ) -> List[DownloadLinkWithClassification]:
     """
     This function takes the basic download links and enhances them with classification
@@ -170,7 +179,7 @@ def classify_download_links(
         download links with classification information
     """
     links = [
-        classify_download_link(link, i)
+        classify_download_link(link, i, verbose)
         for i, link in enumerate(download_links)
     ]
 
@@ -214,8 +223,7 @@ if __name__ == "__main__":
             url=HttpUrl(f"https://localhost:8000/test{i+1}.pdf"),
             text=link,
             file_info=FileTypeInfo(mime_type="application/pdf",
-            charset="utf-8",
-            content_length=1000)
+            charset="utf-8")
         )
         for i, link in enumerate(test_links)
     ])
