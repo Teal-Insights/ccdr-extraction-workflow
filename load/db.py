@@ -35,7 +35,7 @@ def check_schema_sync():
         master_schema = response.text
 
         # Read local schema
-        local_schema_path = Path("extract/schema.py")
+        local_schema_path = Path("load/schema.py")
         if not local_schema_path.exists():
             raise FileNotFoundError(f"Local schema file not found: {local_schema_path}")
 
