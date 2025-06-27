@@ -146,7 +146,7 @@ class Publication(SQLModel, table=True):
         return v
 
     # Relationships
-    documents: List["Document"] = Relationship(back_populates="publication")
+    documents: List["Document"] = Relationship(back_populates="publication", cascade_delete=True)
 
 
 class Document(SQLModel, table=True):
@@ -156,7 +156,7 @@ class Document(SQLModel, table=True):
 
     id: Optional[int] = Field(default=None, primary_key=True, index=True)
     publication_id: Optional[int] = Field(
-        default=None, foreign_key="publication.id", index=True
+        default=None, foreign_key="publication.id", index=True, ondelete="CASCADE"
     )
     type: DocumentType
     download_url: str = Field(max_length=500)
@@ -186,7 +186,7 @@ class Document(SQLModel, table=True):
 
     # Relationships
     publication: Optional[Publication] = Relationship(back_populates="documents")
-    nodes: List["Node"] = Relationship(back_populates="document")
+    nodes: List["Node"] = Relationship(back_populates="document", cascade_delete=True)
 
 
 class Node(SQLModel, table=True):
@@ -196,12 +196,12 @@ class Node(SQLModel, table=True):
 
     id: Optional[int] = Field(default=None, primary_key=True, index=True)
     document_id: Optional[int] = Field(
-        default=None, foreign_key="document.id", index=True
+        default=None, foreign_key="document.id", index=True, ondelete="CASCADE"
     )
     node_type: NodeType
     tag_name: Optional[TagName] = Field(default=None, index=True)
     section_type: Optional[SectionType] = Field(default=None, index=True)
-    parent_id: Optional[int] = Field(default=None, foreign_key="node.id", index=True)
+    parent_id: Optional[int] = Field(default=None, foreign_key="node.id", index=True, ondelete="CASCADE")
     sequence_in_parent: int
     positional_data: List[Dict[str, Any]] = Field(
         default_factory=list, sa_column=Column(JSONB)
@@ -212,15 +212,17 @@ class Node(SQLModel, table=True):
     parent: Optional["Node"] = Relationship(
         back_populates="children", sa_relationship_kwargs={"remote_side": "Node.id"}
     )
-    children: List["Node"] = Relationship(back_populates="parent")
-    content_data: Optional["ContentData"] = Relationship(back_populates="node")
+    children: List["Node"] = Relationship(back_populates="parent", cascade_delete=True)
+    content_data: Optional["ContentData"] = Relationship(back_populates="node", cascade_delete=True)
     source_relations: List["Relation"] = Relationship(
         back_populates="source_node",
         sa_relationship_kwargs={"foreign_keys": "Relation.source_node_id"},
+        cascade_delete=True
     )
     target_relations: List["Relation"] = Relationship(
         back_populates="target_node",
         sa_relationship_kwargs={"foreign_keys": "Relation.target_node_id"},
+        cascade_delete=True
     )
 
 
@@ -228,7 +230,7 @@ class ContentData(SQLModel, table=True):
     __table_args__ = {"comment": "Contains actual content for content-bearing nodes"}
 
     id: Optional[int] = Field(default=None, primary_key=True, index=True)
-    node_id: int = Field(foreign_key="node.id", index=True, unique=True)
+    node_id: int = Field(foreign_key="node.id", index=True, unique=True, ondelete="CASCADE")
     text_content: Optional[str] = None
     storage_url: Optional[str] = Field(default=None, max_length=500)
     description: Optional[str] = None
@@ -246,7 +248,7 @@ class ContentData(SQLModel, table=True):
 
     # Relationships
     node: Node = Relationship(back_populates="content_data")
-    embeddings: List["Embedding"] = Relationship(back_populates="content_data")
+    embeddings: List["Embedding"] = Relationship(back_populates="content_data", cascade_delete=True)
 
 
 class Relation(SQLModel, table=True):
@@ -255,8 +257,8 @@ class Relation(SQLModel, table=True):
     }
 
     id: Optional[int] = Field(default=None, primary_key=True, index=True)
-    source_node_id: int = Field(foreign_key="node.id", index=True)
-    target_node_id: int = Field(foreign_key="node.id", index=True)
+    source_node_id: int = Field(foreign_key="node.id", index=True, ondelete="CASCADE")
+    target_node_id: int = Field(foreign_key="node.id", index=True, ondelete="CASCADE")
     relation_type: RelationType
 
     # Relationships
@@ -275,7 +277,7 @@ class Embedding(SQLModel, table=True):
 
     id: Optional[int] = Field(default=None, primary_key=True, index=True)
     content_data_id: Optional[int] = Field(
-        default=None, foreign_key="contentdata.id", index=True
+        default=None, foreign_key="contentdata.id", index=True, ondelete="CASCADE"
     )
     embedding_vector: List[float] = Field(sa_column=Column(ARRAY(FLOAT)))
     model_name: str = Field(max_length=100)
