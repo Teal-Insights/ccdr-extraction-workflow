@@ -3,6 +3,8 @@ description:
 globs: 
 alwaysApply: true
 ---
+# Python dependency management
+
 This project uses `uv` to manage dependencies and run Python files.
 
 Add Python dependencies like:
@@ -12,3 +14,7 @@ uv add pydantic # add --dev flag for development dependencies
 ```
 
 Then run the file with with `uv run` (or `uv run -m` to run it as a module).
+
+# Python programming patterns
+
+Write type-annotated Python code that will pass a mypy check. Objects returned from functions should generally be Pydantic models rather than dictionaries; this helps enforce the interface between modules.

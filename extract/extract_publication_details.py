@@ -1,11 +1,44 @@
-import json
 import time
 import random
 from playwright.sync_api import sync_playwright
-from typing import Dict, Any, Optional
+from typing import Dict, Optional, List
+
+from pydantic import HttpUrl, BaseModel
 
 
-def scrape_publication_details_with_retry(url: str, max_retries: int = 3, base_delay: float = 2.0) -> Optional[Dict[str, Any]]:
+# Pydantic models for structured data
+class DownloadLink(BaseModel):
+    """Represents a file download link."""
+
+    url: HttpUrl
+    text: str
+
+
+class PublicationMetadata(BaseModel):
+    """Represents additional metadata for a publication."""
+
+    date: str
+    published: str
+    authors: str
+
+
+class PublicationDetailsBase(BaseModel):
+    """Represents the full details of a scraped publication."""
+
+    title: str
+    source_url: HttpUrl
+    abstract: str
+    citation: str
+    uri: HttpUrl
+    metadata: PublicationMetadata
+
+
+class PublicationDetails(PublicationDetailsBase):
+    """Represents the full details of a scraped publication."""
+    download_links: List[DownloadLink] = []
+
+
+def scrape_publication_details_with_retry(url: HttpUrl, max_retries: int = 3, base_delay: float = 2.0) -> Optional[PublicationDetails]:
     """
     Scrapes publication details with retry logic and exponential backoff.
     
@@ -15,7 +48,7 @@ def scrape_publication_details_with_retry(url: str, max_retries: int = 3, base_d
         base_delay: Base delay in seconds between retries (default: 2.0)
     
     Returns:
-        A dictionary containing all scraped metadata, or None if all attempts fail.
+        A PublicationDetails object containing all scraped metadata, or None if all attempts fail.
     """
     for attempt in range(max_retries + 1):  # +1 because we include the initial attempt
         if attempt > 0:
@@ -43,7 +76,7 @@ def scrape_publication_details_with_retry(url: str, max_retries: int = 3, base_d
     return None
 
 
-def scrape_publication_details(url: str) -> Optional[Dict[str, Any]]:
+def scrape_publication_details(url: HttpUrl) -> Optional[PublicationDetails]:
     """
     Scrapes the details for a single publication page.
 
@@ -51,8 +84,8 @@ def scrape_publication_details(url: str) -> Optional[Dict[str, Any]]:
         url: The URL of the publication's detail page.
 
     Returns:
-        A dictionary containing all scraped metadata (title, abstract, authors,
-        citation, uri, downloadLinks, etc.). Returns None if scraping fails.
+        A PublicationDetails object containing all scraped metadata.
+        Returns None if scraping fails.
     """
     with sync_playwright() as p:
         browser = p.chromium.launch(
@@ -104,7 +137,7 @@ def scrape_publication_details(url: str) -> Optional[Dict[str, Any]]:
 
         try:
             print(f"Navigating to: {url}")
-            response = page.goto(url, wait_until="domcontentloaded", timeout=30000)  # Increased timeout to 30s
+            response = page.goto(str(url), wait_until="domcontentloaded", timeout=30000)  # Increased timeout to 30s
 
             # Check if we got rate limited
             if response and response.status == 429:
@@ -221,37 +254,30 @@ def scrape_publication_details(url: str) -> Optional[Dict[str, Any]]:
             publication_data["abstract"] = get_field_value("Abstract")
             publication_data["citation"] = get_field_value("Citation")
 
-            # Get URI - special handling to extract the link
-            try:
-                uri = None
-                headings = page.locator("h5")
-                heading_count = headings.count()
+            # Get URI
+            uri: HttpUrl
+            headings = page.locator("h5")
+            heading_count = headings.count()
 
-                for i in range(heading_count):
-                    heading = headings.nth(i)
-                    if heading.inner_text().strip() == "URI":
-                        # Find the link in the following content
-                        try:
-                            parent = heading.locator("xpath=..")
-                            uri_links = parent.locator("a")
-                            uri_link_count = uri_links.count()
+            for i in range(heading_count):
+                heading = headings.nth(i)
+                if heading.inner_text().strip() == "URI":
+                    # Find the link in the following content
+                    parent = heading.locator("xpath=..")
+                    uri_links = parent.locator("a")
+                    uri_link_count = uri_links.count()
 
-                            for j in range(uri_link_count):
-                                link = uri_links.nth(j)
-                                href = link.get_attribute("href")
-                                if href and (
-                                    "hdl.handle.net" in href or "doi.org" in href
-                                ):
-                                    uri = href
-                                    break
-                        except Exception:
-                            pass
-                        break
+                    for j in range(uri_link_count):
+                        link = uri_links.nth(j)
+                        href = link.get_attribute("href")
+                        if href and (
+                            "hdl.handle.net" in href or "doi.org" in href
+                        ):
+                            uri = HttpUrl(href)
+                            break
+                    break
 
-                publication_data["uri"] = uri
-            except Exception as e:
-                print(f"Error extracting URI: {e}")
-                publication_data["uri"] = None
+            publication_data["uri"] = uri
 
             # Get download links with enhanced functionality
             try:
@@ -303,10 +329,10 @@ def scrape_publication_details(url: str) -> Optional[Dict[str, Any]]:
                     except Exception:
                         continue
 
-                publication_data["downloadLinks"] = download_links
+                publication_data["download_links"] = download_links
             except Exception as e:
                 print(f"Error extracting download links: {e}")
-                publication_data["downloadLinks"] = []
+                publication_data["download_links"] = []
 
             # Get additional metadata
             metadata: Dict[str, Optional[str]] = {
@@ -323,7 +349,7 @@ def scrape_publication_details(url: str) -> Optional[Dict[str, Any]]:
                 f"Extracted details for: {publication_data.get('title', 'Unknown Title')}"
             )
 
-            return publication_data
+            return PublicationDetails(**publication_data)
 
         except Exception as e:
             print(f"Error during scraping of {url}: {str(e)}")
@@ -334,8 +360,8 @@ def scrape_publication_details(url: str) -> Optional[Dict[str, Any]]:
 
 if __name__ == "__main__":
     # Example usage of the main function
-    test_url = "https://openknowledge.worldbank.org/publication/example"
+    test_url = HttpUrl("https://openknowledge.worldbank.org/publication/example")
     result = scrape_publication_details_with_retry(test_url)
     if result:
         print("Successfully extracted publication details:")
-        print(json.dumps(result, indent=2))
+        print(result.model_dump_json(indent=2))

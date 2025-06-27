@@ -2,9 +2,19 @@ import time
 import random
 from playwright.sync_api import sync_playwright
 from typing import List, Dict
+from pydantic import BaseModel, HttpUrl
 
 
-def get_all_publication_links(base_url: str) -> List[Dict[str, str]]:
+class PublicationLink(BaseModel):
+    """Data model for a scraped publication link."""
+
+    title: str
+    url: HttpUrl
+    source: str
+    page_found: int
+
+
+def get_all_publication_links(base_url: str) -> List[PublicationLink]:
     """
     Scrapes all pages of the CCDR collection to get publication links.
     Continues until "Your search returned no results" is found.
@@ -13,10 +23,9 @@ def get_all_publication_links(base_url: str) -> List[Dict[str, str]]:
         base_url: The base URL of the CCDR collection.
 
     Returns:
-        A list of dictionaries, where each dict has "title" and "url".
-        Example: [{"title": "Publication A", "url": "http://..."}, ...]
+        A list of PublicationLink objects.
     """
-    all_links = []
+    all_links: List[PublicationLink] = []
     all_urls = set()  # Track URLs we've already processed
     max_retries = 3
 
@@ -121,12 +130,12 @@ def get_all_publication_links(base_url: str) -> List[Dict[str, str]]:
                         if pub["url"] not in all_urls:
                             all_urls.add(pub["url"])
                             all_links.append(
-                                {
-                                    "title": pub["title"],
-                                    "url": pub["url"],
-                                    "source": "World Bank Open Knowledge Repository",
-                                    "page_found": page_num,
-                                }
+                                PublicationLink(
+                                    title=pub["title"],
+                                    url=pub["url"],
+                                    source="World Bank Open Knowledge Repository",
+                                    page_found=page_num,
+                                )
                             )
                             new_count += 1
 
@@ -368,7 +377,7 @@ if __name__ == "__main__":
 
     print(f"Extracted {len(all_links)} publication links:")
     for i, link in enumerate(all_links[:5]):  # Show first 5 as example
-        print(f"{i+1}. {link['title']}")
-        print(f"   URL: {link['url']}")
-        print(f"   Found on page: {link['page_found']}")
+        print(f"{i+1}. {link.title}")
+        print(f"   URL: {link.url}")
+        print(f"   Found on page: {link.page_found}")
         print()

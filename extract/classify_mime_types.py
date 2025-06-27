@@ -1,10 +1,10 @@
-import json
 import requests
-from pathlib import Path
-import sys
 import re
 import time
 import random
+from typing import Union, List
+from pydantic import BaseModel, HttpUrl
+from extract.extract_publication_details import DownloadLink, PublicationDetailsBase
 
 # Browser-like headers to avoid rate limiting
 DEFAULT_HEADERS = {
@@ -20,6 +20,27 @@ DEFAULT_HEADERS = {
     "Sec-Fetch-User": "?1",
     "Cache-Control": "max-age=0",
 }
+
+# Set to True to store "/content" (post-redirect URL);
+# False to store "/download" (pre-redirect URL)
+STORE_FINAL_URL = True
+
+
+# Pydantic models for structured data
+class FileTypeInfo(BaseModel):
+    """Represents file type information extracted from a URL."""
+
+    mime_type: str
+    charset: str
+    content_length: Union[int, str]  # Can be int or "unknown"/"error"
+
+
+class DownloadLinkWithFileInfo(DownloadLink):
+    file_info: FileTypeInfo
+
+
+class PublicationDetailsWithFileInfo(PublicationDetailsBase):
+    download_links: List[DownloadLinkWithFileInfo]
 
 
 def parse_content_type(content_type_str):
@@ -95,14 +116,19 @@ def transform_worldbank_url(url):
     return url  # Return original URL if no transformation needed
 
 
-def get_file_type_from_url(url, link_text, max_retries=3):
-    """Get file type with retry logic for rate limiting"""
-    guessed_type = guess_file_type_from_text(link_text)
+def get_file_type_from_url(download_link: DownloadLink, max_retries=3) -> DownloadLinkWithFileInfo:
+    """
+    Get file type with retry logic for rate limiting.
+    
+    Raises:
+        Exception: If unable to determine a valid MIME type after all retries.
+    """
+    guessed_type = guess_file_type_from_text(download_link.text)
 
     # Transform World Bank download URLs to content URLs for direct access
-    actual_url = transform_worldbank_url(url)
-    if actual_url != url:
-        print(f"Transformed URL: {url} -> {actual_url}")
+    actual_url = transform_worldbank_url(download_link.url)
+    if actual_url != download_link.url:
+        print(f"Transformed URL: {download_link.url} -> {actual_url}")
 
     for attempt in range(1, max_retries + 1):
         try:
@@ -114,12 +140,12 @@ def get_file_type_from_url(url, link_text, max_retries=3):
 
             # Make a GET request with stream=True to get headers and peek at content
             with requests.get(
-                actual_url, stream=True, allow_redirects=True, headers=DEFAULT_HEADERS
+                str(actual_url), stream=True, allow_redirects=True, headers=DEFAULT_HEADERS
             ) as response:
                 # Check for rate limiting
                 if response.status_code == 429:
                     if attempt == max_retries:
-                        raise Exception("Rate limited (429) - max retries reached")
+                        raise Exception(f"Rate limited (429) after {max_retries} attempts for {download_link.url}")
                     wait_time = random.uniform(15, 30)  # Longer wait for rate limiting
                     print(
                         f"Rate limited. Waiting {wait_time:.1f} seconds before retry..."
@@ -127,15 +153,18 @@ def get_file_type_from_url(url, link_text, max_retries=3):
                     time.sleep(wait_time)
                     continue
 
-                # Get the final URL after redirects
-                final_url = response.url
-
                 # Get content type and charset from the FINAL response headers (post-redirect)
                 content_type = response.headers.get("Content-Type", "unknown")
                 parsed_header = parse_content_type(content_type)
 
                 # Get content length if available
                 content_length = response.headers.get("Content-Length", "unknown")
+                # Convert to int if it's a valid number
+                if content_length != "unknown":
+                    try:
+                        content_length = int(content_length)
+                    except ValueError:
+                        content_length = "unknown"
 
                 # If we're still getting JSON content type or HTML, try to peek at actual content
                 if (
@@ -162,140 +191,52 @@ def get_file_type_from_url(url, link_text, max_retries=3):
                     mime_type = parsed_header["mime_type"]
                     charset = parsed_header["charset"]
 
-                result = {
-                    "guessed_type": guessed_type,
-                    "mime_type": mime_type,
-                    "charset": charset,
-                    "content_length": content_length,
-                    "final_url": url,  # Use original URL for storage
-                    "status_code": response.status_code,
-                }
+                # Apply UTF-8 fallback if no charset was determined
+                if not charset:
+                    charset = "utf-8"
+                    print(f"Warning: No charset detected for {download_link.url}, defaulting to UTF-8")
+
+                # Log warning if guessed type doesn't match actual MIME type
+                if guessed_type and guessed_type != mime_type:
+                    print(f"Warning: Guessed type '{guessed_type}' doesn't match detected type '{mime_type}' for {download_link.url}")
+
+                result = FileTypeInfo(
+                    mime_type=mime_type,
+                    charset=charset,
+                    content_length=content_length,
+                )
 
                 # If we got HTML when expecting PDF/text, consider it a failure
-                if not is_valid_file_info(result):
+                if not is_valid_file_info(result.model_dump()):
                     if attempt == max_retries:
-                        raise Exception("Failed to get expected file type")
+                        raise Exception(f"Failed to get valid file type for {download_link.url} after {max_retries} attempts - got {mime_type}")
                     print("Got unexpected file type, retrying...")
                     continue
 
-                return result
+                return DownloadLinkWithFileInfo(
+                    url=HttpUrl(actual_url) if STORE_FINAL_URL else download_link.url,
+                    text=download_link.text,
+                    file_info=result
+                )
 
         except Exception as e:
             print(f"Attempt {attempt}/{max_retries} failed: {str(e)}")
             if attempt == max_retries:
-                return {
-                    "error": str(e),
-                    "guessed_type": guessed_type,
-                    "mime_type": "error",
-                    "charset": None,  # Let upstream handle the None value
-                    "content_length": "error",
-                    "final_url": url,
-                    "status_code": "error",
-                }
+                raise Exception(f"Failed to determine MIME type for {download_link.url} after {max_retries} attempts: {str(e)}")
+    
+    # This should never be reached, but satisfies the type checker
+    raise Exception(f"Unexpected exit from retry loop for {download_link.url}")
 
 
 def main():
-    # Read the publication details
-    data_file = Path(__file__).parent / "data" / "publication_details.json"
+    # Create a sample DownloadLink
+    download_link = DownloadLink(
+        url=HttpUrl("https://openknowledge.worldbank.org/bitstreams/cf2a2b54-559b-5909-ada8-af36b21bd4da/download"),
+        text="English PDF (18.05 MB)"
+    )
 
-    try:
-        with open(data_file, "r") as f:
-            publications = json.load(f)
-    except Exception as e:
-        print(f"Error reading file: {e}")
-        sys.exit(1)
-
-    # Check if all entries already have valid file info
-    total_links = sum(len(pub.get("downloadLinks", [])) for pub in publications)
-    needs_processing = False
-
-    print(f"Checking {total_links} total download links for valid file info...")
-    for pub in publications:
-        for link in pub.get("downloadLinks", []):
-            if "file_info" not in link or not is_valid_file_info(link["file_info"]):
-                needs_processing = True
-                break
-        if needs_processing:
-            break
-
-    if not needs_processing:
-        print("All entries already have valid file info. No processing needed.")
-        return
-
-    # Process each publication and update the data
-    modified = False
-    processed = 0
-
-    for pub in publications:
-        print(f"\nPublication: {pub['title']}")
-
-        for link in pub.get("downloadLinks", []):
-            processed += 1
-            url = link["url"]
-            print(f"\nProcessing link {processed}/{total_links}")
-            print(f"URL: {url}")
-            print(f"Link text: {link['text']}")
-
-            # Skip if we already have valid file info
-            if "file_info" in link and is_valid_file_info(link["file_info"]):
-                print("Already have valid file info, skipping...")
-                continue
-
-            info = get_file_type_from_url(url, link["text"])
-
-            if info is None or "error" in info:
-                error_msg = (
-                    info.get("error", "Unknown error")
-                    if info
-                    else "Failed to get file info"
-                )
-                print(f"Error: {error_msg}")
-                # Store error information in the link
-                link["file_info"] = {
-                    "error": error_msg,
-                    "mime_type": "error",
-                    "charset": None,  # Let upstream handle the None value
-                }
-            else:
-                print(f"Guessed type from text: {info['guessed_type']}")
-                print(f"MIME Type: {info['mime_type']}")
-                print(f"Charset: {info['charset']}")
-                print(f"Content-Length: {info['content_length']}")
-                print(f"Final URL: {info['final_url']}")
-                print(f"Status Code: {info['status_code']}")
-
-                # Store the file information in the link
-                link["file_info"] = {
-                    "mime_type": info["mime_type"],
-                    "charset": info["charset"],
-                    "content_length": info["content_length"],
-                    "final_url": info["final_url"],
-                }
-
-            modified = True
-
-            # Save progress periodically (every 5 links)
-            if processed % 5 == 0:
-                try:
-                    with open(data_file, "w") as f:
-                        json.dump(publications, f, indent=2)
-                    print(
-                        f"\nSaved progress ({processed}/{total_links} links processed)"
-                    )
-                except Exception as e:
-                    print(f"\nError saving progress: {e}")
-
-    # Final save if modifications were made
-    if modified:
-        try:
-            with open(data_file, "w") as f:
-                json.dump(publications, f, indent=2)
-            print(
-                "\nSuccessfully updated publication_details.json with file type information."
-            )
-        except Exception as e:
-            print(f"\nError saving updates: {e}")
-            sys.exit(1)
+    dl_with_info = get_file_type_from_url(download_link)
+    print(dl_with_info.model_dump_json(indent=2))
 
 
 if __name__ == "__main__":

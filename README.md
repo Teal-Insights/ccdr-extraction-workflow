@@ -26,7 +26,7 @@ The workflow consists of 9 steps that can also be run individually:
    - Adds unique IDs to publications and download links
    - Modifies: `data/publication_details.json`
 
-4. **Classify File Types** (`classify_file_types.py`)
+4. **Classify File Types** (`classify_mime_types.py`)
    - Classifies file types for each download link
    - Modifies: `data/publication_details.json`
 
@@ -58,7 +58,7 @@ The workflow consists of 9 steps that can also be run individually:
 uv run -m extract.extract_publication_links
 uv run -m extract.extract_publication_details
 uv run -m extract.add_ids
-uv run -m extract.classify_file_types
+uv run -m extract.classify_mime_types
 uv run -m extract.filter_download_links
 uv run -m extract.download_files
 uv run -m extract.convert_bin_files
