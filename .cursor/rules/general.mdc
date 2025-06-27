@@ -18,7 +18,7 @@ To avoid confusion, keep your bash console opened to the project root and specif
 
 # Workflow
 
-There are currently 61 CCDRs, comprising 126+ PDF files. Additional CCDRs are published regularly, so ultimately we will need to automate the end-to-end workflow to continually ingest newly published documents.
+There are currently at least 67 CCDRs (including two Tajikistan reports with the same title), comprising on the order of 200 PDF files. Additional CCDRs are published regularly, so ultimately we will need to automate the end-to-end workflow to continually ingest newly published documents.
 
 The extraction workflow is organized in the `extract` folder and can be run as a complete pipeline using [extract_ccdrs.py](mdc:extract_ccdrs.py) or as individual steps.
 

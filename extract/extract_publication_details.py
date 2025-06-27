@@ -288,18 +288,18 @@ def scrape_publication_details(url: str) -> Optional[Dict[str, Any]]:
                         url_attr = link.get_attribute("href")
                         if not url_attr:
                             continue  # Skip links without URLs
-                        url = url_attr  # Now url is guaranteed to be str
+                        download_url = url_attr  # Use a different variable name
 
                         text = link.inner_text().strip()
                         if not text:
                             continue  # Skip links without text
 
                         # Convert relative URLs to absolute URLs
-                        if url.startswith("/"):
-                            url = f"https://openknowledge.worldbank.org{url}"
+                        if download_url.startswith("/"):
+                            download_url = f"https://openknowledge.worldbank.org{download_url}"
 
-                        # At this point, both url and text are guaranteed to be non-None strings
-                        download_links.append({"url": url, "text": text})
+                        # At this point, both download_url and text are guaranteed to be non-None strings
+                        download_links.append({"url": download_url, "text": text})  # Use download_url here
                     except Exception:
                         continue
 
