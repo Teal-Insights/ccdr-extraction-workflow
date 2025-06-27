@@ -41,8 +41,8 @@ load_dotenv(override=True)
 
 def identify_new_publications(scraped_links: List[PublicationLink], session: Session) -> List[PublicationLink]:
     """Queries the DB and filters for publication links that are not yet present."""
-    existing_uris = set(session.exec(select(Publication.uri)).all())
-    new_links = [link for link in scraped_links if str(link.url) not in existing_uris]
+    existing_urls = set(session.exec(select(Publication.source_url)).all())
+    new_links = [link for link in scraped_links if str(link.url) not in existing_urls]
     print(f"Found {len(scraped_links)} total publications, {len(new_links)} are new.")
     return new_links
 
