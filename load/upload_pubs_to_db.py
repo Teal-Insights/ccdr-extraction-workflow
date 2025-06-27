@@ -34,7 +34,7 @@ def persist_publication(pub_data: PublicationDetailsWithClassification, session:
     documents = []
     for dl in pub_data.download_links:
         # Only create Document objects for links marked as to_download=True
-        if dl.classification == DocumentType.MAIN:
+        if dl.classification == DocumentType.MAIN or dl.classification == DocumentType.SUPPLEMENTAL:
             # Validate required fields
             doc = Document(
                 # No id or publication_id - these will be auto-generated and set by the relationship
