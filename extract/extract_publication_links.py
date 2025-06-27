@@ -1,7 +1,9 @@
 import time
 import random
+import json
+import os
 from playwright.sync_api import sync_playwright
-from typing import List
+from typing import List, Set
 from pydantic import BaseModel, HttpUrl
 
 
@@ -14,19 +16,63 @@ class PublicationLink(BaseModel):
     page_found: int
 
 
-def get_all_publication_links(base_url: str) -> List[PublicationLink]:
+def load_existing_links(json_path: str) -> tuple[List[PublicationLink], Set[str]]:
     """
-    Scrapes all pages of the CCDR collection to get publication links.
-    Continues until "Your search returned no results" is found.
+    Load existing publication links from JSON file.
+    
+    Returns:
+        A tuple of (list of PublicationLink objects, set of URLs for fast lookup)
+    """
+    if not os.path.exists(json_path):
+        print(f"No existing file found at {json_path}, starting fresh")
+        return [], set()
+    
+    try:
+        with open(json_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        
+        links = [PublicationLink(**item) for item in data]
+        urls = {str(link.url) for link in links}
+        
+        print(f"Loaded {len(links)} existing publication links from {json_path}")
+        return links, urls
+    
+    except Exception as e:
+        print(f"Error loading existing links from {json_path}: {e}")
+        print("Starting fresh")
+        return [], set()
+
+
+def save_links_to_json(links: List[PublicationLink], json_path: str) -> None:
+    """Save publication links to JSON file."""
+    # Create directory if it doesn't exist
+    os.makedirs(os.path.dirname(json_path), exist_ok=True)
+    
+    # Convert to serializable format
+    data = [link.model_dump(mode='json') for link in links]
+    
+    with open(json_path, 'w', encoding='utf-8') as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
+    
+    print(f"Saved {len(links)} publication links to {json_path}")
+
+
+def get_all_publication_links(base_url: str, json_path: str = "data/publication_links.json") -> List[PublicationLink]:
+    """
+    Scrapes pages of the CCDR collection to get new publication links.
+    Stops when it encounters a link that already exists in the saved file.
+    New links are added to the top of the list.
 
     Args:
         base_url: The base URL of the CCDR collection.
+        json_path: Path to JSON file for persisting links.
 
     Returns:
-        A list of PublicationLink objects.
+        A list of PublicationLink objects (existing + new).
     """
-    all_links: List[PublicationLink] = []
-    all_urls = set()  # Track URLs we've already processed
+    # Load existing links
+    existing_links, existing_urls = load_existing_links(json_path)
+    new_links: List[PublicationLink] = []
     max_retries = 3
 
     with sync_playwright() as p:
@@ -78,7 +124,9 @@ def get_all_publication_links(base_url: str) -> List[PublicationLink]:
         )
 
         page_num = 1
-        while True:
+        found_existing = False
+        
+        while not found_existing:
             for attempt in range(1, max_retries + 1):
                 try:
                     # Construct page URL with pagination parameter
@@ -119,6 +167,7 @@ def get_all_publication_links(base_url: str) -> List[PublicationLink]:
                     # Check if we reached the end (no results found)
                     if result == "no_results":
                         print("Reached end of results - 'Your search returned no results' found")
+                        found_existing = True
                         break  # Exit the retry loop
 
                     page_publications = result
@@ -126,27 +175,30 @@ def get_all_publication_links(base_url: str) -> List[PublicationLink]:
                     # Process publications found on this page
                     new_count = 0
                     for pub in page_publications:
-                        # Only add if we haven't seen this URL before
-                        if pub["url"] not in all_urls:
-                            all_urls.add(pub["url"])
-                            all_links.append(
-                                PublicationLink(
-                                    title=pub["title"],
-                                    url=pub["url"],
-                                    source="World Bank Open Knowledge Repository",
-                                    page_found=page_num,
-                                )
-                            )
-                            new_count += 1
+                        # Check if we already have this URL
+                        if pub["url"] in existing_urls:
+                            print(f"Found existing publication: {pub['title'][:80]}...")
+                            print("Stopping scrape - encountered known publication")
+                            found_existing = True
+                            break
+                        
+                        # Add new publication to the beginning of new_links
+                        new_link = PublicationLink(
+                            title=pub["title"],
+                            url=pub["url"],
+                            source="World Bank Open Knowledge Repository",
+                            page_found=page_num,
+                        )
+                        new_links.insert(0, new_link)  # Insert at beginning
+                        existing_urls.add(pub["url"])  # Track for future checks
+                        new_count += 1
+                        print(f"Added new publication: {pub['title'][:80]}...")
 
-                    print(
-                        f"Found {len(page_publications)} publications on page {page_num}"
-                    )
-                    print(
-                        f"Total unique publications collected so far: {len(all_links)}"
-                    )
+                    print(f"Found {len(page_publications)} publications on page {page_num}")
+                    print(f"New publications from this page: {new_count}")
+                    print(f"Total new publications found: {len(new_links)}")
 
-                    # Successfully processed this page, move to next
+                    # Successfully processed this page, move to next if we haven't found existing
                     break
 
                 except Exception as e:
@@ -167,8 +219,8 @@ def get_all_publication_links(base_url: str) -> List[PublicationLink]:
                     )
                     time.sleep(wait_time)
 
-            # Check if we found "no results" and should exit the main loop
-            if result == "no_results":
+            # Check if we found existing publication and should exit the main loop
+            if found_existing:
                 break
 
             # Increment page number for next iteration
@@ -176,8 +228,15 @@ def get_all_publication_links(base_url: str) -> List[PublicationLink]:
 
         browser.close()
 
+    # Combine new links (at the top) with existing links
+    all_links = new_links + existing_links
+    
     print(f"\nCompleted extraction from {page_num} pages")
-    print(f"Total unique publications collected: {len(all_links)}")
+    print(f"New publications found: {len(new_links)}")
+    print(f"Total publications: {len(all_links)}")
+
+    # Save updated links to JSON
+    save_links_to_json(all_links, json_path)
 
     return all_links
 
@@ -371,13 +430,21 @@ def extract_publication_links_from_page(page, url):
 
 
 if __name__ == "__main__":
-    # Example usage of the main function
+    # Example usage of the main function with JSON persistence
     base_url = "https://openknowledge.worldbank.org/collections/5cd4b6f6-94bb-5996-b00c-58be279093de"
-    all_links = get_all_publication_links(base_url)
+    json_path = "data/publication_links.json"
+    
+    all_links = get_all_publication_links(base_url, json_path)
 
-    print(f"Extracted {len(all_links)} publication links:")
+    print(f"\nFinal summary:")
+    print(f"Total publication links: {len(all_links)}")
+    print(f"Saved to: {json_path}")
+    
+    print(f"\nFirst 5 publications:")
     for i, link in enumerate(all_links[:5]):  # Show first 5 as example
         print(f"{i+1}. {link.title}")
         print(f"   URL: {link.url}")
         print(f"   Found on page: {link.page_found}")
         print()
+    
+    assert len(all_links) >= 67, f"Expected at least 67 publication links, got {len(all_links)}"
