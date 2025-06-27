@@ -101,7 +101,7 @@ def run_stage_1_metadata_ingestion() -> None:
                 citation=pub_details_with_info.citation,
                 uri=pub_details_with_info.uri,
                 metadata=pub_details_with_info.metadata,
-                download_links=classify_download_links(pub_details_with_info.download_links)
+                download_links=classify_download_links(pub_details_with_info.download_links, True)
             )
 
             # d. Validate that there's at least one download link to process

@@ -99,9 +99,11 @@ def classify_download_link(
 
     # Detect language and set default to English
     detected_lang = detect_language_in_text(input.text) or 'en'
-    is_pdf = any(indicator in text_lower for indicator in NON_PDF_INDICATORS)
+    is_pdf = not any(indicator in text_lower for indicator in NON_PDF_INDICATORS)
 
     if detected_lang != 'en' or not is_pdf:
+        if verbose:
+            print(f"Skipping link: {input.text} (language: {detected_lang}, PDF: {is_pdf})")
         return None
 
     # Check for main report indicators
@@ -132,7 +134,7 @@ def classify_download_link(
             url=input.url,
             text=input.text,
             file_info=input.file_info,
-            classification=DocumentType.MAIN,
+            classification=DocumentType.MAIN if position == 0 else DocumentType.SUPPLEMENTAL,
             language_detected=detected_lang,
             reasoning=(
                 "First English PDF (assumed main report)"
@@ -147,7 +149,7 @@ def classify_download_link(
         url=input.url,
         text=input.text,
         file_info=input.file_info,
-        classification=DocumentType.MAIN,
+        classification=DocumentType.MAIN if position == 0 else DocumentType.SUPPLEMENTAL,
         language_detected=detected_lang,
         reasoning=(
             "First document with no language specified (assumed main English report)"
@@ -157,7 +159,8 @@ def classify_download_link(
     )
 
     if verbose:
-        print(f"Classification result: {result.model_dump_json(indent=2)}")
+        print(f"{input.text} -> {result.classification}")
+        print(f"  Reasoning: {result.reasoning}")
 
     return result
 
@@ -201,9 +204,7 @@ if __name__ == "__main__":
     test_links = [
         "English PDF (3.71 MB)",
         "English PDF (3.78 MB)",
-        "English PDF (2.86 MB)",
         "Vietnamese PDF (3.59 MB)",
-        "Vietnamese PDF (3.56 MB)",
         "English Summary Text (88.61 KB)",
         # Test the problematic cases that were incorrectly flagged as non-English
         "Estimating the Economic Damage of Climate Change in Kenya (7.44 MB)",
@@ -215,18 +216,18 @@ if __name__ == "__main__":
         "French Report Summary (2.1 MB)",
         "Spanish Document Overview (1.8 MB)",
         "Chinese Analysis Report (3.2 MB)",
-        "Agriculture in Punjab (3.71 MB)"
+        "Agriculture in Punjab (3.71 MB)",
+        "Full Report (1.3 MB)"
     ]
 
     results = classify_download_links([
         DownloadLinkWithFileInfo(
             url=HttpUrl(f"https://localhost:8000/test{i+1}.pdf"),
             text=link,
-            file_info=FileTypeInfo(mime_type="application/pdf",
-            charset="utf-8")
+            file_info=FileTypeInfo(
+                mime_type="application/pdf",
+                charset="utf-8"
+            )
         )
         for i, link in enumerate(test_links)
-    ])
-    print("\nClassification results:")
-    for link in results:
-        print(f"{link.text} -> {link.classification}")
+    ], verbose=True)
