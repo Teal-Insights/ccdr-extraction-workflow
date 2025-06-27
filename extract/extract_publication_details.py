@@ -188,28 +188,16 @@ def scrape_publication_details(url: HttpUrl) -> Optional[PublicationDetails]:
 
             # Use Python Playwright API to extract all required information
             print("Extracting publication details...")
-            publication_data = {}
 
             # Get the title
-            try:
-                title_element = page.locator("h2").first
-                if title_element.count() > 0:
-                    title_text = title_element.inner_text().strip()
-                    # Remove "Publication:" prefix if present
-                    if title_text.startswith("Publication:"):
-                        title_text = title_text.replace("Publication:", "").strip()
-                    publication_data["title"] = title_text
-                else:
-                    publication_data["title"] = None
-                    print("Warning: No title found")
-            except Exception as e:
-                print(f"Error extracting title: {e}")
-                publication_data["title"] = None
-
-            # If we couldn't extract a title, this is likely a failed page load
-            if not publication_data.get("title"):
-                print("No title extracted - likely failed page load")
-                return None
+            title_element = page.locator("h2").first
+            if title_element.count() > 0:
+                title_text = title_element.inner_text().strip()
+                # Remove "Publication:" prefix if present
+                if title_text.startswith("Publication:"):
+                    title_text = title_text.replace("Publication:", "").strip()
+            else:
+                raise ValueError("No title found")
 
             # Helper function to get field value based on h5 heading
             def get_field_value(label: str) -> Optional[str]:
@@ -250,12 +238,19 @@ def scrape_publication_details(url: HttpUrl) -> Optional[PublicationDetails]:
                     print(f"Error getting field value for {label}: {e}")
                     return None
 
-            # Extract field values
-            publication_data["abstract"] = get_field_value("Abstract")
-            publication_data["citation"] = get_field_value("Citation")
+            # Extract field values - fail if essential fields are missing
+            abstract = get_field_value("Abstract")
+            if not abstract:
+                print("Failed to extract abstract - this is required")
+                return None
+            
+            citation = get_field_value("Citation") 
+            if not citation:
+                print("Failed to extract citation - this is required")
+                return None
 
             # Get URI
-            uri: HttpUrl
+            uri: Optional[HttpUrl] = None
             headings = page.locator("h5")
             heading_count = headings.count()
 
@@ -277,11 +272,13 @@ def scrape_publication_details(url: HttpUrl) -> Optional[PublicationDetails]:
                             break
                     break
 
-            publication_data["uri"] = uri
+            # Require URI to be found
+            if not uri:
+                raise ValueError("No URI found")
 
             # Get download links with enhanced functionality
             try:
-                download_links = []
+                download_links: List[DownloadLink] = []
 
                 # First, try to click SHOW MORE button if present
                 try:
@@ -325,31 +322,46 @@ def scrape_publication_details(url: HttpUrl) -> Optional[PublicationDetails]:
                             download_url = f"https://openknowledge.worldbank.org{download_url}"
 
                         # At this point, both download_url and text are guaranteed to be non-None strings
-                        download_links.append({"url": download_url, "text": text})  # Use download_url here
+                        download_links.append(DownloadLink(url=HttpUrl(download_url), text=text))
                     except Exception:
                         continue
 
-                publication_data["download_links"] = download_links
             except Exception as e:
                 print(f"Error extracting download links: {e}")
-                publication_data["download_links"] = []
+                download_links = []
 
-            # Get additional metadata
-            metadata: Dict[str, Optional[str]] = {
-                "date": get_field_value("Date"),
-                "published": get_field_value("Published"),
-                "authors": get_field_value("Author(s)"),
-            }
-            publication_data["metadata"] = metadata
-
-            # Add source URL to the data
-            publication_data["source_url"] = url
-
-            print(
-                f"Extracted details for: {publication_data.get('title', 'Unknown Title')}"
+            # Get additional metadata - fail if required fields are missing
+            date = get_field_value("Date")
+            published = get_field_value("Published") 
+            authors = get_field_value("Author(s)")
+            
+            if not date:
+                print("Failed to extract date - this is required")
+                return None
+            if not published:
+                print("Failed to extract published field - this is required")
+                return None
+            if not authors:
+                print("Failed to extract authors - this is required")
+                return None
+                
+            metadata = PublicationMetadata(
+                date=date,
+                published=published,
+                authors=authors,
             )
 
-            return PublicationDetails(**publication_data)
+            print(f"Extracted details for: {title_text}")
+
+            return PublicationDetails(
+                title=title_text,
+                source_url=url,
+                abstract=abstract,
+                citation=citation,
+                uri=uri,
+                metadata=metadata,
+                download_links=download_links
+            )
 
         except Exception as e:
             print(f"Error during scraping of {url}: {str(e)}")

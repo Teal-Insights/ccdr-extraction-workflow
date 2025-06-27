@@ -2,7 +2,7 @@ import requests
 import re
 import time
 import random
-from typing import Union, List
+from typing import Optional, List
 from pydantic import BaseModel, HttpUrl
 from extract.extract_publication_details import DownloadLink, PublicationDetailsBase
 
@@ -32,7 +32,7 @@ class FileTypeInfo(BaseModel):
 
     mime_type: str
     charset: str
-    content_length: Union[int, str]  # Can be int or "unknown"/"error"
+    content_length: Optional[int]  # Can be int or "unknown"/"error"
 
 
 class DownloadLinkWithFileInfo(DownloadLink):
@@ -98,7 +98,7 @@ def is_valid_file_info(file_info):
     return True
 
 
-def transform_worldbank_url(url):
+def transform_worldbank_url(url: HttpUrl) -> HttpUrl:
     """Transform World Bank download URLs to content URLs for direct file access"""
     import re
 
@@ -106,14 +106,14 @@ def transform_worldbank_url(url):
     download_pattern = (
         r"https://openknowledge\.worldbank\.org/bitstreams/([a-f0-9-]+)/download"
     )
-    match = re.match(download_pattern, url)
+    match = re.match(download_pattern, str(url))
 
     if match:
         uuid = match.group(1)
         content_url = f"https://openknowledge.worldbank.org/server/api/core/bitstreams/{uuid}/content"
-        return content_url
+        return HttpUrl(content_url)
 
-    return url  # Return original URL if no transformation needed
+    return url
 
 
 def get_file_type_from_url(download_link: DownloadLink, max_retries=3) -> DownloadLinkWithFileInfo:
@@ -126,7 +126,7 @@ def get_file_type_from_url(download_link: DownloadLink, max_retries=3) -> Downlo
     guessed_type = guess_file_type_from_text(download_link.text)
 
     # Transform World Bank download URLs to content URLs for direct access
-    actual_url = transform_worldbank_url(download_link.url)
+    actual_url: HttpUrl = transform_worldbank_url(download_link.url)
     if actual_url != download_link.url:
         print(f"Transformed URL: {download_link.url} -> {actual_url}")
 
@@ -158,13 +158,13 @@ def get_file_type_from_url(download_link: DownloadLink, max_retries=3) -> Downlo
                 parsed_header = parse_content_type(content_type)
 
                 # Get content length if available
-                content_length = response.headers.get("Content-Length", "unknown")
+                content_length_str = response.headers.get("Content-Length", None)
                 # Convert to int if it's a valid number
-                if content_length != "unknown":
+                if content_length_str is not None:
                     try:
-                        content_length = int(content_length)
+                        content_length = int(content_length_str)
                     except ValueError:
-                        content_length = "unknown"
+                        content_length = None
 
                 # If we're still getting JSON content type or HTML, try to peek at actual content
                 if (

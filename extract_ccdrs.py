@@ -45,7 +45,7 @@ def identify_new_publications(scraped_links: List[PublicationLink], session: Ses
     return new_links
 
 
-def run_stage_1_metadata_ingestion():
+def run_stage_1_metadata_ingestion() -> None:
     """
     Orchestrates the scraping and persistence of publication metadata.
     - Scrapes all publication links.
@@ -125,7 +125,7 @@ def run_stage_1_metadata_ingestion():
     print("--- Stage 1 Complete ---")
 
 
-def run_stage_2_file_processing():
+def run_stage_2_file_processing() -> None:
     """
     Orchestrates the processing of binary files for documents.
     - Queries the database for unprocessed documents.
@@ -211,7 +211,7 @@ def run_stage_2_file_processing():
     print("\n--- Stage 2 Complete ---")
 
 
-def run_openai_upload():
+def run_openai_upload() -> None:
     """
     Runs the OpenAI upload step as a separate post-processing step.
     Uploads all PDF files to the OpenAI vector store associated with the assistant.
