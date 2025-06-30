@@ -297,7 +297,8 @@ def scrape_publication_details(url: HttpUrl) -> Optional[PublicationDetails]:
                             link = uri_links.nth(j)
                             href = link.get_attribute("href")
                             if href and (
-                                "hdl.handle.net" in href or "doi.org" in href
+                                "hdl.handle.net" in href or "doi.org" in href or 
+                                ("openknowledge.worldbank.org" in href and "/handle/" in href)
                             ):
                                 uri = HttpUrl(href)
                                 break
