@@ -246,6 +246,9 @@ if __name__ == "__main__":
     parser.add_argument(
         "--openai", action="store_true", help="Run OpenAI upload after other stages."
     )
+    parser.add_argument(
+        "--cleanup", action="store_true", help="Clean up local files after processing."
+    )
     args = parser.parse_args()
 
     # Check schema synchronization first
@@ -268,8 +271,8 @@ if __name__ == "__main__":
     if args.openai:
         # OpenAI upload runs after the primary stages are complete
         run_openai_upload()
-        # Clean up local files after OpenAI upload is done
 
-    cleanup_local_files()
+    if args.cleanup:
+        cleanup_local_files()
 
     print("\nWorkflow finished.")
