@@ -4,7 +4,7 @@ from enum import Enum
 from dotenv import load_dotenv
 from sqlmodel import Field, Relationship, SQLModel, Column
 from pydantic import HttpUrl, field_validator
-from sqlalchemy.dialects.postgresql import ARRAY, FLOAT, JSONB, VARCHAR
+from sqlalchemy.dialects.postgresql import ARRAY, FLOAT, JSONB
 
 # Load environment variables
 load_dotenv(override=True)
