@@ -158,7 +158,7 @@ def create_bucket_if_not_exists(
         s3_client.head_bucket(Bucket=bucket_name)
         logger.info(f"Bucket {bucket_name} already exists")
     except ClientError as e:
-        error_code = e.response["Error"]["Code"]
+        error_code = e.response.get("Error", {}).get("Code", "")
         if error_code == "404":
             # Bucket doesn't exist, create it
             try:
@@ -217,7 +217,7 @@ def sync_data_to_s3(bucket_name: str, session: boto3.Session) -> None:
                     s3_client.head_object(Bucket=bucket_name, Key=s3_key)
                     logger.debug(f"PDF already exists in S3: {s3_key}")
                 except ClientError as e:
-                    if e.response["Error"]["Code"] == "404":
+                    if e.response.get("Error", {}).get("Code", "") == "404":
                         # File doesn't exist, upload it
                         s3_client.upload_file(str(file_path), bucket_name, s3_key)
                         uploaded_files += 1
@@ -233,8 +233,40 @@ def sync_data_to_s3(bucket_name: str, session: boto3.Session) -> None:
     logger.info(f"Skipped {skipped_files} non-PDF files.")
 
 
-def main():
-    """Main function to run the S3 upload workflow."""
+def cleanup_local_files() -> None:
+    """
+    Clean up local PDF files after S3 upload is complete.
+    This removes all PDF files from the extract/data directory.
+    """
+    logger.info("--- Cleaning up local PDF files ---")
+    
+    data_dir = Path("extract/data")
+    if not data_dir.exists():
+        logger.info("No data directory found to clean up.")
+        return
+    
+    pdf_files = list(data_dir.rglob("*.pdf"))
+    
+    if not pdf_files:
+        logger.info("No PDF files found to clean up.")
+        return
+    
+    for pdf_file in pdf_files:
+        try:
+            os.remove(pdf_file)
+            logger.info(f"  -> Removed: {pdf_file}")
+        except Exception as e:
+            logger.error(f"  -> Failed to remove {pdf_file}: {e}")
+    
+    logger.info(f"--- Cleaned up {len(pdf_files)} PDF files ---")
+
+
+def main(cleanup_after_upload: bool = False):
+    """Main function to run the S3 upload workflow.
+    
+    Args:
+        cleanup_after_upload: Whether to clean up local PDF files after successful upload.
+    """
     try:
         # Verify environment variables
         bucket_name, aws_region = verify_environment_variables()
@@ -261,6 +293,11 @@ def main():
         sync_data_to_s3(bucket_name, session)
 
         logger.info("AWS S3 setup and upload completed successfully!")
+        
+        # Clean up local files if requested
+        if cleanup_after_upload:
+            cleanup_local_files()
+
         return 0
 
     except Exception as e:
