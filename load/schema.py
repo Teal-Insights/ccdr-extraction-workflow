@@ -1,3 +1,4 @@
+import os
 from datetime import date, datetime, UTC
 from typing import List, Optional, Dict, Any
 from enum import Enum
@@ -5,9 +6,10 @@ from dotenv import load_dotenv
 from sqlmodel import Field, Relationship, SQLModel, Column
 from pydantic import HttpUrl, field_validator
 from sqlalchemy.dialects.postgresql import ARRAY, FLOAT, JSONB
+from sqlalchemy.orm import Mapped
 
 # Load environment variables
-load_dotenv(override=True)
+load_dotenv(os.getenv("ENVIRONMENT", ".env"), override=True)
 
 
 # Enums for document and node types
@@ -146,7 +148,7 @@ class Publication(SQLModel, table=True):
         return v
 
     # Relationships
-    documents: List["Document"] = Relationship(back_populates="publication", cascade_delete=True)
+    documents: Mapped[List["Document"]] = Relationship(back_populates="publication", cascade_delete=True)
 
 
 class Document(SQLModel, table=True):
@@ -185,8 +187,8 @@ class Document(SQLModel, table=True):
         return v
 
     # Relationships
-    publication: Optional[Publication] = Relationship(back_populates="documents")
-    nodes: List["Node"] = Relationship(back_populates="document", cascade_delete=True)
+    publication: Mapped[Optional[Publication]] = Relationship(back_populates="documents")
+    nodes: Mapped[List["Node"]] = Relationship(back_populates="document", cascade_delete=True)
 
 
 class Node(SQLModel, table=True):
@@ -208,18 +210,18 @@ class Node(SQLModel, table=True):
     )
 
     # Relationships
-    document: Optional[Document] = Relationship(back_populates="nodes")
-    parent: Optional["Node"] = Relationship(
+    document: Mapped[Optional[Document]] = Relationship(back_populates="nodes")
+    parent: Mapped[Optional["Node"]] = Relationship(
         back_populates="children", sa_relationship_kwargs={"remote_side": "Node.id"}
     )
-    children: List["Node"] = Relationship(back_populates="parent", cascade_delete=True)
-    content_data: Optional["ContentData"] = Relationship(back_populates="node", cascade_delete=True)
-    source_relations: List["Relation"] = Relationship(
+    children: Mapped[List["Node"]] = Relationship(back_populates="parent", cascade_delete=True)
+    content_data: Mapped[Optional["ContentData"]] = Relationship(back_populates="node", cascade_delete=True)
+    source_relations: Mapped[List["Relation"]] = Relationship(
         back_populates="source_node",
         sa_relationship_kwargs={"foreign_keys": "Relation.source_node_id"},
         cascade_delete=True
     )
-    target_relations: List["Relation"] = Relationship(
+    target_relations: Mapped[List["Relation"]] = Relationship(
         back_populates="target_node",
         sa_relationship_kwargs={"foreign_keys": "Relation.target_node_id"},
         cascade_delete=True
@@ -247,8 +249,8 @@ class ContentData(SQLModel, table=True):
         return v
 
     # Relationships
-    node: Node = Relationship(back_populates="content_data")
-    embeddings: List["Embedding"] = Relationship(back_populates="content_data", cascade_delete=True)
+    node: Mapped[Node] = Relationship(back_populates="content_data")
+    embeddings: Mapped[List["Embedding"]] = Relationship(back_populates="content_data", cascade_delete=True)
 
 
 class Relation(SQLModel, table=True):
@@ -262,11 +264,11 @@ class Relation(SQLModel, table=True):
     relation_type: RelationType
 
     # Relationships
-    source_node: Node = Relationship(
+    source_node: Mapped[Node] = Relationship(
         back_populates="source_relations",
         sa_relationship_kwargs={"foreign_keys": "Relation.source_node_id"},
     )
-    target_node: Node = Relationship(
+    target_node: Mapped[Node] = Relationship(
         back_populates="target_relations",
         sa_relationship_kwargs={"foreign_keys": "Relation.target_node_id"},
     )
@@ -284,4 +286,4 @@ class Embedding(SQLModel, table=True):
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     # Relationships
-    content_data: Optional[ContentData] = Relationship(back_populates="embeddings")
+    content_data: Mapped[Optional[ContentData]] = Relationship(back_populates="embeddings")
