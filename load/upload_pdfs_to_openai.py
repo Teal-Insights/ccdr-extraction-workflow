@@ -79,38 +79,64 @@ async def get_existing_files_by_doc_id(vector_store_id: str, client: AsyncOpenAI
     """
     existing_doc_ids = set()
     try:
-        # List all files in the vector store
-        files_response = await client.vector_stores.files.list(
-            vector_store_id=vector_store_id
-        )
-
         # Extract document IDs from filenames using the pattern doc_{id}.pdf
         doc_id_pattern = re.compile(r"doc_(\d+)\.pdf$")
         
-        for file_obj in files_response.data:
-            # Only consider files that are successfully processed or in progress
-            if file_obj.status not in ['completed', 'in_progress']:
-                logger.debug(f"Skipping file {file_obj.id} with status: {file_obj.status}")
-                continue
-                
-            # Get the file details to access the filename
-            try:
-                file_details = await client.files.retrieve(file_obj.id)
-                if file_details.filename:
-                    match = doc_id_pattern.search(file_details.filename)
-                    if match:
-                        doc_id = int(match.group(1))
-                        existing_doc_ids.add(doc_id)
-                        logger.debug(f"Found existing file for Document ID: {doc_id} (status: {file_obj.status})")
-                    else:
-                        logger.debug(f"Filename doesn't match expected pattern: {file_details.filename}")
-            except Exception as e:
-                logger.warning(
-                    f"Could not retrieve details for file {file_obj.id}: {e}"
+        # Paginate through all files in the vector store
+        after = None
+        total_files_checked = 0
+        
+        while True:
+            # List files with pagination
+            if after is None:
+                files_response = await client.vector_stores.files.list(
+                    vector_store_id=vector_store_id,
+                    limit=100  # Maximum allowed per page
                 )
-                continue
+            else:
+                files_response = await client.vector_stores.files.list(
+                    vector_store_id=vector_store_id,
+                    limit=100,  # Maximum allowed per page
+                    after=after
+                )
+            
+            if not files_response.data:
+                break
+            
+            total_files_checked += len(files_response.data)
+            logger.debug(f"Processing batch of {len(files_response.data)} files (total checked: {total_files_checked})")
+            
+            for file_obj in files_response.data:
+                # Only consider files that are successfully processed or in progress
+                if file_obj.status not in ['completed', 'in_progress']:
+                    logger.debug(f"Skipping file {file_obj.id} with status: {file_obj.status}")
+                    continue
+                    
+                # Get the file details to access the filename
+                try:
+                    file_details = await client.files.retrieve(file_obj.id)
+                    if file_details.filename:
+                        match = doc_id_pattern.search(file_details.filename)
+                        if match:
+                            doc_id = int(match.group(1))
+                            existing_doc_ids.add(doc_id)
+                            logger.debug(f"Found existing file for Document ID: {doc_id} (status: {file_obj.status})")
+                        else:
+                            logger.debug(f"Filename doesn't match expected pattern: {file_details.filename}")
+                except Exception as e:
+                    logger.warning(
+                        f"Could not retrieve details for file {file_obj.id}: {e}"
+                    )
+                    continue
+            
+            # Check if there are more pages
+            if not files_response.has_more:
+                break
+            
+            # Set the cursor for the next page
+            after = files_response.data[-1].id
 
-        logger.info(f"Found {len(existing_doc_ids)} successfully processed document files in vector store")
+        logger.info(f"Found {len(existing_doc_ids)} successfully processed document files in vector store (checked {total_files_checked} total files)")
         return existing_doc_ids
 
     except Exception as e:
