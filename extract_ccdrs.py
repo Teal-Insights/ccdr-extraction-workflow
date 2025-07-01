@@ -133,7 +133,7 @@ def run_stage_1_metadata_ingestion() -> None:
     print("--- Stage 1 Complete ---")
 
 
-def run_stage_2_file_processing(cleanup_files: bool = True) -> None:
+def run_stage_2_file_processing() -> None:
     """
     Orchestrates the processing of binary files for documents.
     - Queries the database for unprocessed documents.
@@ -143,11 +143,6 @@ def run_stage_2_file_processing(cleanup_files: bool = True) -> None:
         - Measures file size.
         - Uploads the final file to S3.
         - Updates the document's database record with the S3 URL and file size.
-        - Optionally cleans up the local file.
-    
-    Args:
-        cleanup_files: Whether to delete local files after S3 upload. Set to False 
-                      if OpenAI upload will run later and needs the local files.
     """
     print("--- Running Stage 2: File Processing ---")
 
@@ -207,28 +202,14 @@ def run_stage_2_file_processing(cleanup_files: bool = True) -> None:
                 continue  # Move to the next document
 
             finally:
-                # e. Cleanup local files (only if cleanup_files is True)
-                if cleanup_files:
-                    if local_path_final and Path(local_path_final).exists():
-                        os.remove(local_path_final)
-                        print(f"  -> Cleaned up local file: {local_path_final}")
-                    # Also clean up the initial .bin if it's different and still exists
-                    if (
-                        local_path_initial
-                        and local_path_initial != local_path_final
-                        and Path(local_path_initial).exists()
-                    ):
-                        os.remove(local_path_initial)
-                        print(f"  -> Cleaned up temp file: {local_path_initial}")
-                else:
-                    # Just clean up the initial .bin file if it's different from final
-                    if (
-                        local_path_initial
-                        and local_path_initial != local_path_final
-                        and Path(local_path_initial).exists()
-                    ):
-                        os.remove(local_path_initial)
-                        print(f"  -> Cleaned up temp file: {local_path_initial}")
+                # Just clean up the initial .bin file if it's different from final
+                if (
+                    local_path_initial
+                    and local_path_initial != local_path_final
+                    and Path(local_path_initial).exists()
+                ):
+                    os.remove(local_path_initial)
+                    print(f"  -> Cleaned up temp file: {local_path_initial}")
 
     print("\n--- Stage 2 Complete ---")
 
@@ -282,12 +263,13 @@ if __name__ == "__main__":
     if run_s2:
         # Only clean up files immediately if OpenAI upload is not going to run
         cleanup_immediately = not args.openai
-        run_stage_2_file_processing(cleanup_files=cleanup_immediately)
+        run_stage_2_file_processing()
 
     if args.openai:
         # OpenAI upload runs after the primary stages are complete
         run_openai_upload()
         # Clean up local files after OpenAI upload is done
-        cleanup_local_files()
+
+    cleanup_local_files()
 
     print("\nWorkflow finished.")
