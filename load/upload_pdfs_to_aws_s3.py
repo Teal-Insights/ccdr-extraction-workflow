@@ -24,6 +24,7 @@ Usage:
 
 import os
 from pathlib import Path
+from typing import Optional
 import boto3
 from botocore.exceptions import ClientError, NoCredentialsError, TokenRetrievalError
 from dotenv import load_dotenv
@@ -123,7 +124,7 @@ def upload_file_to_s3(
     return storage_url
 
 
-def check_aws_authentication() -> tuple[bool, boto3.Session | None]:
+def check_aws_authentication() -> tuple[bool, Optional[boto3.Session]]:
     """Check if AWS SSO is authenticated and return session."""
     try:
         session = get_aws_session()

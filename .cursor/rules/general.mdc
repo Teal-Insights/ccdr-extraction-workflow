@@ -31,7 +31,7 @@ The extraction workflow consists of 9 sequential steps:
 3. **Add IDs** - Adds unique IDs to publications and download links
 4. **Classify File Types** - Classifies file types for each download link using LLM
 5. **Filter Download Links** - Filters and classifies which links to download
-6. **Download Files** - Downloads the selected PDF files to `data/pub_*/dl_*.pdf`
+6. **Download Files** - Downloads the selected PDF files to `data/pub_*/doc_*.pdf`
 7. **Convert BIN Files** - Converts .bin files to .pdf if they are PDF documents
 8. **Upload to Database** - Uploads publications and documents to PostgreSQL database using [schema.py](mdc:extract/schema.py)
 9. **Upload PDFs to OpenAI** - Uploads PDF files to OpenAI vector store for AI-powered search
