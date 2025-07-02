@@ -36,7 +36,7 @@ The workflow consists of 9 steps that can also be run individually:
 
 6. **Download Files** (`download_files.py`)
    - Downloads the selected PDF files
-   - Output: `data/pub_*/dl_*.pdf`
+   - Output: `data/pub_*/doc_*.pdf`
 
 7. **Convert BIN Files** (`convert_bin_files.py`)
    - Converts .bin files to .pdf if they are PDF documents
@@ -82,4 +82,4 @@ After running the complete workflow, you'll have:
 - Downloaded PDF files organized in `data/pub_*/` directories
 - Publications and documents uploaded to the PostgreSQL database
 - PDF files uploaded to OpenAI vector store for AI-powered search
-- Currently processes 61 CCDRs comprising 126+ PDF files 
+- Currently processes 67+ CCDRs comprising 198+ PDF files 

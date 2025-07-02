@@ -264,8 +264,6 @@ if __name__ == "__main__":
         run_stage_1_metadata_ingestion()
 
     if run_s2:
-        # Only clean up files immediately if OpenAI upload is not going to run
-        cleanup_immediately = not args.openai
         run_stage_2_file_processing()
 
     if args.openai:

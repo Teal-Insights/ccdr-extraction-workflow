@@ -1,4 +1,5 @@
 .env
+.env.production
 .specstory
 .cursorindexingignore
 repomix-output.*
