@@ -1,13 +1,16 @@
+import os
 from datetime import date, datetime, UTC
 from typing import List, Optional, Dict, Any
 from enum import Enum
 from dotenv import load_dotenv
 from sqlmodel import Field, Relationship, SQLModel, Column
 from pydantic import HttpUrl, field_validator
-from sqlalchemy.dialects.postgresql import ARRAY, FLOAT, JSONB, VARCHAR
+from sqlalchemy.dialects.postgresql import ARRAY, FLOAT, JSONB
+from sqlalchemy.orm import Mapped
 
 # Load environment variables
-load_dotenv(override=True)
+load_dotenv(os.getenv("ENVIRONMENT", ".env"), override=True)
+
 
 # Enums for document and node types
 class DocumentType(str, Enum):
@@ -15,9 +18,11 @@ class DocumentType(str, Enum):
     SUPPLEMENTAL = "SUPPLEMENTAL"
     OTHER = "OTHER"
 
+
 class NodeType(str, Enum):
     TEXT_NODE = "TEXT_NODE"
     ELEMENT_NODE = "ELEMENT_NODE"
+
 
 class TagName(str, Enum):
     HEADER = "HEADER"
@@ -57,6 +62,7 @@ class TagName(str, Enum):
     CITE = "CITE"
     BLOCKQUOTE = "BLOCKQUOTE"
 
+
 class SectionType(str, Enum):
     ABSTRACT = "ABSTRACT"
     ACKNOWLEDGEMENTS = "ACKNOWLEDGEMENTS"
@@ -87,10 +93,12 @@ class SectionType(str, Enum):
     TEXT_BOX = "TEXT_BOX"
     TITLE_PAGE = "TITLE_PAGE"
 
+
 class EmbeddingSource(str, Enum):
     TEXT_CONTENT = "TEXT_CONTENT"
     DESCRIPTION = "DESCRIPTION"
     CAPTION = "CAPTION"
+
 
 class RelationType(str, Enum):
     REFERENCES_NOTE = "REFERENCES_NOTE"
@@ -99,6 +107,7 @@ class RelationType(str, Enum):
     IS_SUPPLEMENTED_BY = "IS_SUPPLEMENTED_BY"
     CONTINUES = "CONTINUES"
     CROSS_REFERENCES = "CROSS_REFERENCES"
+
 
 # Pydantic model for positional data
 class PositionalData(SQLModel):
@@ -110,13 +119,16 @@ class PositionalData(SQLModel):
         return {
             "page_pdf": self.page_pdf,
             "page_logical": self.page_logical,
-            "bbox": self.bbox
+            "bbox": self.bbox,
         }
+
 
 # Define the models
 class Publication(SQLModel, table=True):
-    __table_args__ = {'comment': 'Contains publication metadata and relationships to documents'}
-    
+    __table_args__ = {
+        "comment": "Contains publication metadata and relationships to documents"
+    }
+
     id: Optional[int] = Field(default=None, primary_key=True, index=True)
     title: str = Field(max_length=500)
     abstract: Optional[str] = None
@@ -126,24 +138,28 @@ class Publication(SQLModel, table=True):
     source: str = Field(max_length=100)
     source_url: str = Field(max_length=500)
     uri: str = Field(max_length=500)
-    
+
     # Validators for URLs
-    @field_validator('source_url', 'uri')
+    @field_validator("source_url", "uri")
     @classmethod
     def validate_url(cls, v: str) -> str:
         # Validate the URL format but return as string
         HttpUrl(v)
         return v
-    
+
     # Relationships
-    documents: List["Document"] = Relationship(back_populates="publication")
+    documents: Mapped[List["Document"]] = Relationship(back_populates="publication", cascade_delete=True)
 
 
 class Document(SQLModel, table=True):
-    __table_args__ = {'comment': 'Contains document metadata and relationships to nodes'}
-    
+    __table_args__ = {
+        "comment": "Contains document metadata and relationships to nodes"
+    }
+
     id: Optional[int] = Field(default=None, primary_key=True, index=True)
-    publication_id: Optional[int] = Field(default=None, foreign_key="publication.id", index=True)
+    publication_id: Optional[int] = Field(
+        default=None, foreign_key="publication.id", index=True, ondelete="CASCADE"
+    )
     type: DocumentType
     download_url: str = Field(max_length=500)
     description: str
@@ -153,16 +169,16 @@ class Document(SQLModel, table=True):
     file_size: Optional[int] = None
     language: Optional[str] = Field(default=None, max_length=10)
     version: Optional[str] = Field(default=None, max_length=50)
-    
+
     # Validator for URL
-    @field_validator('download_url')
+    @field_validator("download_url")
     @classmethod
     def validate_url(cls, v: str) -> str:
         # Validate the URL format but return as string
         HttpUrl(v)
         return v
 
-    @field_validator('storage_url')
+    @field_validator("storage_url")
     @classmethod
     def validate_optional_url(cls, v: Optional[str]) -> Optional[str]:
         # Validate the URL format but return as string
@@ -171,45 +187,52 @@ class Document(SQLModel, table=True):
         return v
 
     # Relationships
-    publication: Optional[Publication] = Relationship(back_populates="documents")
-    nodes: List["Node"] = Relationship(back_populates="document")
+    publication: Mapped[Optional[Publication]] = Relationship(back_populates="documents")
+    nodes: Mapped[List["Node"]] = Relationship(back_populates="document", cascade_delete=True)
 
 
 class Node(SQLModel, table=True):
-    __table_args__ = {'comment': 'Unified DOM node structure for both element and text nodes'}
-    
+    __table_args__ = {
+        "comment": "Unified DOM node structure for both element and text nodes"
+    }
+
     id: Optional[int] = Field(default=None, primary_key=True, index=True)
-    document_id: Optional[int] = Field(default=None, foreign_key="document.id", index=True)
+    document_id: Optional[int] = Field(
+        default=None, foreign_key="document.id", index=True, ondelete="CASCADE"
+    )
     node_type: NodeType
     tag_name: Optional[TagName] = Field(default=None, index=True)
     section_type: Optional[SectionType] = Field(default=None, index=True)
-    parent_id: Optional[int] = Field(default=None, foreign_key="node.id", index=True)
+    parent_id: Optional[int] = Field(default=None, foreign_key="node.id", index=True, ondelete="CASCADE")
     sequence_in_parent: int
-    positional_data: List[Dict[str, Any]] = Field(default_factory=list, sa_column=Column(JSONB))
+    positional_data: List[Dict[str, Any]] = Field(
+        default_factory=list, sa_column=Column(JSONB)
+    )
 
     # Relationships
-    document: Optional[Document] = Relationship(back_populates="nodes")
-    parent: Optional["Node"] = Relationship(
-        back_populates="children",
-        sa_relationship_kwargs={"remote_side": "Node.id"}
+    document: Mapped[Optional[Document]] = Relationship(back_populates="nodes")
+    parent: Mapped[Optional["Node"]] = Relationship(
+        back_populates="children", sa_relationship_kwargs={"remote_side": "Node.id"}
     )
-    children: List["Node"] = Relationship(back_populates="parent")
-    content_data: Optional["ContentData"] = Relationship(back_populates="node")
-    source_relations: List["Relation"] = Relationship(
+    children: Mapped[List["Node"]] = Relationship(back_populates="parent", cascade_delete=True)
+    content_data: Mapped[Optional["ContentData"]] = Relationship(back_populates="node", cascade_delete=True)
+    source_relations: Mapped[List["Relation"]] = Relationship(
         back_populates="source_node",
-        sa_relationship_kwargs={"foreign_keys": "Relation.source_node_id"}
+        sa_relationship_kwargs={"foreign_keys": "Relation.source_node_id"},
+        cascade_delete=True
     )
-    target_relations: List["Relation"] = Relationship(
+    target_relations: Mapped[List["Relation"]] = Relationship(
         back_populates="target_node",
-        sa_relationship_kwargs={"foreign_keys": "Relation.target_node_id"}
+        sa_relationship_kwargs={"foreign_keys": "Relation.target_node_id"},
+        cascade_delete=True
     )
 
 
 class ContentData(SQLModel, table=True):
-    __table_args__ = {'comment': 'Contains actual content for content-bearing nodes'}
-    
+    __table_args__ = {"comment": "Contains actual content for content-bearing nodes"}
+
     id: Optional[int] = Field(default=None, primary_key=True, index=True)
-    node_id: int = Field(foreign_key="node.id", index=True, unique=True)
+    node_id: int = Field(foreign_key="node.id", index=True, unique=True, ondelete="CASCADE")
     text_content: Optional[str] = None
     storage_url: Optional[str] = Field(default=None, max_length=500)
     description: Optional[str] = None
@@ -217,7 +240,7 @@ class ContentData(SQLModel, table=True):
     embedding_source: EmbeddingSource
 
     # Validator for optional URL
-    @field_validator('storage_url')
+    @field_validator("storage_url")
     @classmethod
     def validate_optional_url(cls, v: Optional[str]) -> Optional[str]:
         # Validate the URL format but return as string
@@ -226,39 +249,41 @@ class ContentData(SQLModel, table=True):
         return v
 
     # Relationships
-    node: Node = Relationship(back_populates="content_data")
-    embeddings: List["Embedding"] = Relationship(back_populates="content_data")
+    node: Mapped[Node] = Relationship(back_populates="content_data")
+    embeddings: Mapped[List["Embedding"]] = Relationship(back_populates="content_data", cascade_delete=True)
 
 
 class Relation(SQLModel, table=True):
-    __table_args__ = {'comment': 'Contains non-hierarchical relationships between nodes'}
+    __table_args__ = {
+        "comment": "Contains non-hierarchical relationships between nodes"
+    }
 
     id: Optional[int] = Field(default=None, primary_key=True, index=True)
-    source_node_id: int = Field(foreign_key="node.id", index=True)
-    target_node_id: int = Field(foreign_key="node.id", index=True)
+    source_node_id: int = Field(foreign_key="node.id", index=True, ondelete="CASCADE")
+    target_node_id: int = Field(foreign_key="node.id", index=True, ondelete="CASCADE")
     relation_type: RelationType
 
     # Relationships
-    source_node: Node = Relationship(
+    source_node: Mapped[Node] = Relationship(
         back_populates="source_relations",
-        sa_relationship_kwargs={"foreign_keys": "Relation.source_node_id"}
+        sa_relationship_kwargs={"foreign_keys": "Relation.source_node_id"},
     )
-    target_node: Node = Relationship(
+    target_node: Mapped[Node] = Relationship(
         back_populates="target_relations",
-        sa_relationship_kwargs={"foreign_keys": "Relation.target_node_id"}
+        sa_relationship_kwargs={"foreign_keys": "Relation.target_node_id"},
     )
 
 
 class Embedding(SQLModel, table=True):
-    __table_args__ = {'comment': 'Contains vector embeddings for content data'}
-    
+    __table_args__ = {"comment": "Contains vector embeddings for content data"}
+
     id: Optional[int] = Field(default=None, primary_key=True, index=True)
-    content_data_id: Optional[int] = Field(default=None, foreign_key="contentdata.id", index=True)
-    embedding_vector: List[float] = Field(
-        sa_column=Column(ARRAY(FLOAT))
+    content_data_id: Optional[int] = Field(
+        default=None, foreign_key="contentdata.id", index=True, ondelete="CASCADE"
     )
+    embedding_vector: List[float] = Field(sa_column=Column(ARRAY(FLOAT)))
     model_name: str = Field(max_length=100)
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
-    
+
     # Relationships
-    content_data: Optional[ContentData] = Relationship(back_populates="embeddings")
+    content_data: Mapped[Optional[ContentData]] = Relationship(back_populates="embeddings")

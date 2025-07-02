@@ -1,0 +1,43 @@
+name: Monthly CCDR Extraction Pipeline
+
+on:
+  schedule:
+    # Runs at 2:00 AM UTC on the 1st day of every month
+    - cron: '0 2 1 * *'
+  workflow_dispatch:
+    # Allow manual triggering
+
+jobs:
+  extract-ccdrs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30  # 30 minutes timeout for the full pipeline
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v6
+
+    - name: Install Playwright browsers
+      run: |
+        uv sync
+        uv run playwright install chromium
+        uv run playwright install-deps
+
+    - name: Run CCDR extraction pipeline
+      env:
+        POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+        POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+        POSTGRES_HOST: ${{ secrets.POSTGRES_HOST }}
+        POSTGRES_PORT: ${{ secrets.POSTGRES_PORT }}
+        POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+        S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
+        AWS_REGION: ${{ secrets.AWS_REGION }}
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        ASSISTANT_ID: ${{ secrets.ASSISTANT_ID }}
+      run: |
+        echo "Running full CCDR extraction pipeline with OpenAI upload and cleanup"
+        uv run extract_ccdrs.py --openai --cleanup

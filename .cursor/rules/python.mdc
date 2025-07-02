@@ -3,16 +3,18 @@ description:
 globs: 
 alwaysApply: true
 ---
+# Python dependency management
+
 This project uses `uv` to manage dependencies and run Python files.
 
-Add Python dependencies like:
+Add Python dependencies to the workspace like:
 
 ```bash
 uv add pydantic # add --dev flag for development dependencies
 ```
 
-Then run the file with with `uv run`, like:
+Then run the file as a module with `uv run -m`.
 
-```bash
-uv run -m transform.1_extract_images
-```
+# Python programming patterns
+
+Write type-annotated Python code that will pass a mypy check. Objects returned from functions should generally be Pydantic models rather than dictionaries; this helps enforce the interface between modules.

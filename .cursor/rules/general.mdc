@@ -3,60 +3,70 @@ description:
 globs: 
 alwaysApply: true
 ---
-This repository contains workflows and scripts for:
+This repository contains the extraction workflow for scraping World Bank Country and Climate Development Reports (CCDRs) from the Internet. This is part of the data preparation pipeline for the [CCDR Explorer](mdc:README.md), created by Teal Insights for Nature Finance.
 
-1. Scraping the World Bank Country and Climate Development Reports (CCDRs) from the Internet
-2. Transforming the scraped documents into structured JSON data
-3. Uploading to a PostgreSQL database
-4. Generating embeddings for semantic search
+The repository focuses specifically on:
+
+1. Scraping CCDR publication metadata from the World Bank Open Knowledge Repository
+2. Downloading PDF files
+3. Uploading metadata to a PostgreSQL database
+4. Uploading PDFs to OpenAI vector store for AI-powered search
 
 Working documents and helper files not meant to be retained may be placed in the `artifacts` folder, which is ignored by git.
 
 To avoid confusion, keep your bash console opened to the project root and specify all file paths relative to root.
 
-#  Workflow
+# Workflow
 
-There are currently 61 CCDRs, comprising 126 PDF files and a total of 8,185 pages. (Additional CCDRs are published regularly, so ultimately we will need to automate the end-to-end workflow to continually ingest newly published documents. But for now, the goal is proof of concept.)
+There are currently at least 67 CCDRs (including two Tajikistan reports with the same title), comprising on the order of 200 PDF files. Additional CCDRs are published regularly, so ultimately we will need to automate the end-to-end workflow to continually ingest newly published documents.
 
-The ETL workflow is organized into `extract`, `transform`, and `load` folders. Each folder contains Python and Bash scripts with filenames numbered in a logical sequence (the order they were developed or are meant to be run).
+The extraction workflow is organized in the `extract` folder and can be run as a complete pipeline using [extract_ccdrs.py](mdc:extract_ccdrs.py) or as individual steps.
 
-## Extraction
+## Extraction Steps
 
-The `extract` folder contains scripts for scraping the CCDRs from the World Bank Open Knowledge Repository. Each CCDR ("publication") may consist of one or more PDF files ("documents").
+The extraction workflow consists of 9 sequential steps:
 
-First we collect links to the CCDR detail pages in `extract/data/publication_links.json`, an array with keys for publication "title", details page "url", "source" repository title, and "page_found" in the paginated CCDR collection results. Then we enrich this array—with data scraped from the publication details page, generated publication and document IDs, and LLM-generated document classifications—and write the result to an array in `extract/data/publication_details.json` with the following schema: `extract/data/publication_details_schema.json`.
+1. **Extract Publication Links** - Scrapes publication links from the World Bank repository, creating `data/publication_links.json`
+2. **Extract Publication Details** - Extracts detailed information from each publication page, creating `data/publication_details.json`
+3. **Add IDs** - Adds unique IDs to publications and download links
+4. **Classify File Types** - Classifies file types for each download link using LLM
+5. **Filter Download Links** - Filters and classifies which links to download
+6. **Download Files** - Downloads the selected PDF files to `data/pub_*/doc_*.pdf`
+7. **Convert BIN Files** - Converts .bin files to .pdf if they are PDF documents
+8. **Upload to Database** - Uploads publications and documents to PostgreSQL database using [schema.py](mdc:extract/schema.py)
+9. **Upload PDFs to OpenAI** - Uploads PDF files to OpenAI vector store for AI-powered search
 
-Finally, we download all PDF files to `extract/data/pub_*/dl_*.pdf`, where the asterisks are incrementing integers. (The document IDs skip some integers, corresponding to skipped plaintext versions of the PDF files.) Some downloaded files are compressed as `.bin`, so we unzip those.
+Each CCDR ("publication") may consist of one or more PDF files ("documents"). The workflow enriches publication data with scraped details, generated IDs, and LLM-generated document classifications.
 
-## Transformation
+## Usage
 
-In the `transform` folder, we first define our desired database schema and map it to the above JSON schema in [1_db_schema_design.md](mdc:transform/1_db_schema_design.md).
+Run the complete workflow:
+```bash
+uv run extract_ccdrs.py
+```
 
-From here, we explore various methods for transforming the downloaded PDF files into hierarchically structured data matching our schema. Ideally, we could do this in a single pass with a model specialized for the purpose. In practice, we will probably need a multi-step workflow. Perhaps the cumulative results from the multi-step workflow can eventually be used to create synthetic data for training a model.
+Or run individual steps:
+```bash
+uv run -m extract.extract_publication_links
+uv run -m extract.extract_publication_details
+# ... etc
+```
 
-Currently, we have scripts to:
+## Document Content Processing
 
-1. Convert each page to an image and use a VLM to generate bounding box coordinates for contentful images such as charts and tables, writing the result to `transform/images/document_regions.json` (schema in `transform/images/document_regions_schema.json`)
-2. Mechanically extract text with pyMuPDF and write to `transform/text/text_content.json`
-3. Clean up extracted text and convert to markdown with an LLM, writing to `transform/text/text_content_processed.json`
-4. Identify page ranges of [document components](mdc:https:/sparontologies.github.io/doco/current/doco.html) with an LLM and write to `transform/text/sections.json` (schema in `transform/text/sections_schema.json`)
-5. Extract hierarchical section headings from table of contents text using an LLM and write to `transform/text/hierarchical_headings.json`
-6. Extract hierarchical section headings from a document without ToC using an LLM and write to `transform/text/headings.json`
+Note that this repository handles extraction and basic metadata processing only. The detailed parsing and transformation of document content (text extraction, section identification, hierarchical structuring, etc.) happens in separate repositories as part of the broader CCDR analysis pipeline.
 
-I would like to create some evals to measure workflow performance both on the individual subtasks and on the end-to-end workflow. We should create the most naive possible version of the end-to-end workflow and start with that. Then I'll see if I can improve on that. To measure performance, I can probably just use cosine similarity to a human-produced result.
+- This project uses `uv` to manage dependencies and run Python files.
 
-The steps, as I see them, roughly in order of priority/practicality:
+Add Python dependencies like:
 
-1. Create, for a few PDF pages, my own ideal human-produced example and a simple eval scoring script.
-2. Try giving Google Gemini a few PDF pages with a prompt to see what it can do out of the box. Try with both the actual PDF pages extracted from file and then with images of the pages.
-3. Run a PDF through a few commercial and open-source tools to see what outputs we get.
-4. Try using an LLM to draw bounding boxes around both text and images with an array to indicate reading order, and then mechanically extract. (Section hierarchy a challenge here; can we enrich with hierarchical heading extraction?)
-5. Try mechanical text extraction with markdown and see if maybe we can de mechanical image extraction as well, even though the images are SVGs and their boundaries are therefore hard to detect. (Reading order and section hierarchy a challenge here; can we guess them mechanically?)
-6. Try mechanical text extraction plus VLM image extraction. (Reading order and section hierarchy a challenge here; can we guide with an LLM?)
+```bash
+uv add pydantic # add --dev flag for development dependencies
+```
 
-## Loading
+Then run the file with `uv run`, like:
 
-Currently we have scripts for creating a PostgreSQL database matching our schema, for uploading `extract/data/publication_details.json` to our PostgreSQL tables, and for uploading PDFs to S3 (though this may ultimately be unnecessary, given that the PDFs are available online from the World Bank).
-
-In future, we will need to upload each document's extracted content nodes.
+```bash
+uv run -m extract.extract_publication_links
+```
 
