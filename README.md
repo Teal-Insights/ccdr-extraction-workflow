@@ -59,8 +59,6 @@ uv run extract_ccdrs.py --openai
 uv run extract_ccdrs.py --cleanup
 ```
 
-
-
 ## Configuration
 
 The workflow requires several environment variables. For local development, create an `.env` file in the project root:
