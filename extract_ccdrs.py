@@ -28,18 +28,33 @@ from dotenv import load_dotenv
 from load.db import engine, check_schema_sync
 from load.schema import Publication, Document
 from extract.extract_publication_links import get_all_publication_links, PublicationLink
-from extract.extract_publication_details import scrape_publication_details_with_retry, PublicationDetails
-from extract.classify_mime_types import get_file_type_from_url, PublicationDetailsWithFileInfo
-from extract.classify_document_types import classify_download_links, PublicationDetailsWithClassification
+from extract.extract_publication_details import (
+    scrape_publication_details_with_retry,
+    PublicationDetails,
+)
+from extract.classify_mime_types import (
+    get_file_type_from_url,
+    PublicationDetailsWithFileInfo,
+)
+from extract.classify_document_types import (
+    classify_download_links,
+    PublicationDetailsWithClassification,
+)
 from load.upload_pubs_to_db import persist_publication
 from extract.download_files import download_document_file
 from extract.convert_bin_files import analyze_and_prepare_file
-from load.upload_pdfs_to_aws_s3 import get_s3_client, upload_file_to_s3, cleanup_local_files
+from load.upload_pdfs_to_aws_s3 import (
+    get_s3_client,
+    upload_file_to_s3,
+    cleanup_local_files,
+)
 
 load_dotenv(override=True)
 
 
-def identify_new_publications(scraped_links: List[PublicationLink], session: Session) -> List[PublicationLink]:
+def identify_new_publications(
+    scraped_links: List[PublicationLink], session: Session
+) -> List[PublicationLink]:
     """Queries the DB and filters for publication links that are not yet present."""
     existing_urls = set(session.exec(select(Publication.source_url)).all())
     new_links = [link for link in scraped_links if str(link.url) not in existing_urls]
@@ -65,7 +80,9 @@ def run_stage_1_metadata_ingestion() -> None:
 
     with Session(engine) as session:
         # 2. Identify New Publications
-        new_links_to_process: List[PublicationLink] = identify_new_publications(all_links, session)
+        new_links_to_process: List[PublicationLink] = identify_new_publications(
+            all_links, session
+        )
 
         if not new_links_to_process:
             print("No new publications to process.")
@@ -83,7 +100,9 @@ def run_stage_1_metadata_ingestion() -> None:
                 time.sleep(delay)
 
             # a. Scrape Details
-            pub_details: Optional[PublicationDetails] = scrape_publication_details_with_retry(link_info.url)
+            pub_details: Optional[PublicationDetails] = (
+                scrape_publication_details_with_retry(link_info.url)
+            )
             if not pub_details or not pub_details.download_links:
                 print(
                     f"  -> Failed to scrape details or no download links found. Skipping."
@@ -91,25 +110,34 @@ def run_stage_1_metadata_ingestion() -> None:
                 continue
 
             # b. Get MIME types (lightweight HEAD/GET request)
-            pub_details_with_info: PublicationDetailsWithFileInfo = PublicationDetailsWithFileInfo(
-                title=pub_details.title,
-                source_url=pub_details.source_url,
-                abstract=pub_details.abstract,
-                citation=pub_details.citation,
-                uri=pub_details.uri,
-                metadata=pub_details.metadata,
-                download_links=[get_file_type_from_url(link) for link in pub_details.download_links]
+            pub_details_with_info: PublicationDetailsWithFileInfo = (
+                PublicationDetailsWithFileInfo(
+                    title=pub_details.title,
+                    source_url=pub_details.source_url,
+                    abstract=pub_details.abstract,
+                    citation=pub_details.citation,
+                    uri=pub_details.uri,
+                    metadata=pub_details.metadata,
+                    download_links=[
+                        get_file_type_from_url(link)
+                        for link in pub_details.download_links
+                    ],
+                )
             )
 
             # c. Classify Links
-            pub_details_with_classification: PublicationDetailsWithClassification = PublicationDetailsWithClassification(
-                title=pub_details_with_info.title,
-                source_url=pub_details_with_info.source_url,
-                abstract=pub_details_with_info.abstract,
-                citation=pub_details_with_info.citation,
-                uri=pub_details_with_info.uri,
-                metadata=pub_details_with_info.metadata,
-                download_links=classify_download_links(pub_details_with_info.download_links, True)
+            pub_details_with_classification: PublicationDetailsWithClassification = (
+                PublicationDetailsWithClassification(
+                    title=pub_details_with_info.title,
+                    source_url=pub_details_with_info.source_url,
+                    abstract=pub_details_with_info.abstract,
+                    citation=pub_details_with_info.citation,
+                    uri=pub_details_with_info.uri,
+                    metadata=pub_details_with_info.metadata,
+                    download_links=classify_download_links(
+                        pub_details_with_info.download_links, True
+                    ),
+                )
             )
 
             # d. Validate that there's at least one download link to process
@@ -235,7 +263,7 @@ def run_openai_upload() -> None:
 
 if __name__ == "__main__":
     import argparse
-    
+
     parser = argparse.ArgumentParser(description="CCDR Data Pipeline Orchestrator")
     parser.add_argument(
         "--stage1", action="store_true", help="Run only Stage 1: Metadata Ingestion."
@@ -253,7 +281,9 @@ if __name__ == "__main__":
 
     # Check schema synchronization first
     if not check_schema_sync():
-        print("\n❌ Schema synchronization failed. Please resolve schema differences before proceeding.")
+        print(
+            "\n❌ Schema synchronization failed. Please resolve schema differences before proceeding."
+        )
         exit(1)
 
     # Determine which stages to run

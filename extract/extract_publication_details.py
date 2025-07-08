@@ -35,19 +35,25 @@ class PublicationDetailsBase(BaseModel):
 
 class PublicationDetails(PublicationDetailsBase):
     """Represents the full details of a scraped publication."""
+
     download_links: List[DownloadLink] = []
 
 
-def scrape_publication_details_with_retry(url: HttpUrl, max_retries: int = 5, base_delay: float = 10.0, max_delay: float = 900.0) -> Optional[PublicationDetails]:
+def scrape_publication_details_with_retry(
+    url: HttpUrl,
+    max_retries: int = 5,
+    base_delay: float = 10.0,
+    max_delay: float = 900.0,
+) -> Optional[PublicationDetails]:
     """
     Scrapes publication details with robust retry logic and exponential backoff.
-    
+
     Args:
         url: The URL of the publication's detail page.
         max_retries: Maximum number of retry attempts (default: 5)
         base_delay: Base delay in seconds between retries (default: 10.0)
         max_delay: Maximum delay in seconds to cap exponential backoff (default: 900.0 = 15 minutes)
-    
+
     Returns:
         A PublicationDetails object containing all scraped metadata, or None if all attempts fail.
     """
@@ -58,33 +64,41 @@ def scrape_publication_details_with_retry(url: HttpUrl, max_retries: int = 5, ba
             # Add jitter (random factor between 0.5 and 1.5 of the base delay)
             jitter = random.uniform(0.5 * base_delay, 1.5 * base_delay)
             delay = min(exponential_delay + jitter, max_delay)
-            
-            print(f"Attempt {attempt + 1}/{max_retries + 1} for {url} (waiting {delay:.1f}s)")
+
+            print(
+                f"Attempt {attempt + 1}/{max_retries + 1} for {url} (waiting {delay:.1f}s)"
+            )
             time.sleep(delay)
         else:
             print(f"Attempt {attempt + 1}/{max_retries + 1} for {url}")
-        
+
         result = scrape_publication_details(url)
-        
+
         if result is not None:
             # Success - we got valid data
             if attempt > 0:
                 print(f"Success on attempt {attempt + 1}")
-            
+
             # Add a brief pause after successful request to be respectful
-            brief_pause = random.uniform(2.0, 5.0)  # Always add some delay between requests
-            print(f"Adding brief pause of {brief_pause:.1f}s after successful request...")
+            brief_pause = random.uniform(
+                2.0, 5.0
+            )  # Always add some delay between requests
+            print(
+                f"Adding brief pause of {brief_pause:.1f}s after successful request..."
+            )
             time.sleep(brief_pause)
-            
+
             return result
-        
+
         # Check if we should retry
         if attempt < max_retries:
             print(f"Attempt {attempt + 1} failed, will retry...")
         else:
             print(f"All {max_retries + 1} attempts failed for {url}")
-            print("Consider waiting longer before retrying this URL, or check if the server is blocking requests")
-    
+            print(
+                "Consider waiting longer before retrying this URL, or check if the server is blocking requests"
+            )
+
     return None
 
 
@@ -160,7 +174,9 @@ def scrape_publication_details(url: HttpUrl) -> Optional[PublicationDetails]:
 
             try:
                 print(f"Navigating to: {url}")
-                response = page.goto(str(url), wait_until="domcontentloaded", timeout=60000)  # 60 seconds timeout
+                response = page.goto(
+                    str(url), wait_until="domcontentloaded", timeout=60000
+                )  # 60 seconds timeout
 
                 # Check if we got rate limited or other HTTP errors
                 if response:
@@ -180,7 +196,9 @@ def scrape_publication_details(url: HttpUrl) -> Optional[PublicationDetails]:
                 # Wait for page content to load with much longer timeout and better error detection
                 print("Waiting for page content to load...")
                 try:
-                    page.wait_for_selector('h2, h5, a[href*="/bitstreams/"]', timeout=30000)  # 30 seconds
+                    page.wait_for_selector(
+                        'h2, h5, a[href*="/bitstreams/"]', timeout=30000
+                    )  # 30 seconds
                     print("Page content loaded")
                 except Exception as e:
                     print(f"Content loading timeout: {e}")
@@ -191,19 +209,29 @@ def scrape_publication_details(url: HttpUrl) -> Optional[PublicationDetails]:
                         body_text = page.locator("body").inner_text().lower()
                     except:
                         pass
-                    
+
                     # Enhanced rate limiting detection
                     rate_limit_indicators = [
-                        "429", "too many requests", "rate limit", "slow down",
-                        "try again later", "temporarily unavailable", "service unavailable",
-                        "connection refused", "server error"
+                        "429",
+                        "too many requests",
+                        "rate limit",
+                        "slow down",
+                        "try again later",
+                        "temporarily unavailable",
+                        "service unavailable",
+                        "connection refused",
+                        "server error",
                     ]
-                    
-                    if any(indicator in title.lower() for indicator in rate_limit_indicators) or \
-                       any(indicator in body_text for indicator in rate_limit_indicators):
+
+                    if any(
+                        indicator in title.lower()
+                        for indicator in rate_limit_indicators
+                    ) or any(
+                        indicator in body_text for indicator in rate_limit_indicators
+                    ):
                         print("Detected rate limiting or server issues.")
                         return None
-                    
+
                     # If it's just a timeout but page seems to have loaded partially, continue
                     print("Continuing with partial page load...")
 
@@ -212,7 +240,14 @@ def scrape_publication_details(url: HttpUrl) -> Optional[PublicationDetails]:
                 print(f"Page title: {title}")
 
                 # Enhanced error detection
-                error_indicators = ["429", "too many requests", "error", "not found", "unavailable", "refused"]
+                error_indicators = [
+                    "429",
+                    "too many requests",
+                    "error",
+                    "not found",
+                    "unavailable",
+                    "refused",
+                ]
                 if any(indicator in title.lower() for indicator in error_indicators):
                     print(f"Detected error page based on title: {title}")
                     return None
@@ -249,9 +284,7 @@ def scrape_publication_details(url: HttpUrl) -> Optional[PublicationDetails]:
                                     )
 
                                     if following_elements.count() > 0:
-                                        content = (
-                                            following_elements.first.inner_text().strip()
-                                        )
+                                        content = following_elements.first.inner_text().strip()
                                         return content if content else None
 
                                     # Fallback: try next sibling elements
@@ -274,8 +307,8 @@ def scrape_publication_details(url: HttpUrl) -> Optional[PublicationDetails]:
                 if not abstract:
                     print("Failed to extract abstract - this is required")
                     return None
-                
-                citation = get_field_value("Citation") 
+
+                citation = get_field_value("Citation")
                 if not citation:
                     print("Failed to extract citation - this is required")
                     return None
@@ -297,8 +330,12 @@ def scrape_publication_details(url: HttpUrl) -> Optional[PublicationDetails]:
                             link = uri_links.nth(j)
                             href = link.get_attribute("href")
                             if href and (
-                                "hdl.handle.net" in href or "doi.org" in href or 
-                                ("openknowledge.worldbank.org" in href and "/handle/" in href)
+                                "hdl.handle.net" in href
+                                or "doi.org" in href
+                                or (
+                                    "openknowledge.worldbank.org" in href
+                                    and "/handle/" in href
+                                )
                             ):
                                 uri = HttpUrl(href)
                                 break
@@ -315,7 +352,10 @@ def scrape_publication_details(url: HttpUrl) -> Optional[PublicationDetails]:
                     # First, try to click SHOW MORE button if present
                     try:
                         show_more_button = page.locator('a:has-text("SHOW MORE")')
-                        if show_more_button.count() > 0 and show_more_button.is_visible():
+                        if (
+                            show_more_button.count() > 0
+                            and show_more_button.is_visible()
+                        ):
                             print("Found SHOW MORE button, clicking...")
                             show_more_button.click()
 
@@ -351,10 +391,14 @@ def scrape_publication_details(url: HttpUrl) -> Optional[PublicationDetails]:
 
                             # Convert relative URLs to absolute URLs
                             if download_url.startswith("/"):
-                                download_url = f"https://openknowledge.worldbank.org{download_url}"
+                                download_url = (
+                                    f"https://openknowledge.worldbank.org{download_url}"
+                                )
 
                             # At this point, both download_url and text are guaranteed to be non-None strings
-                            download_links.append(DownloadLink(url=HttpUrl(download_url), text=text))
+                            download_links.append(
+                                DownloadLink(url=HttpUrl(download_url), text=text)
+                            )
                         except Exception:
                             continue
 
@@ -364,9 +408,9 @@ def scrape_publication_details(url: HttpUrl) -> Optional[PublicationDetails]:
 
                 # Get additional metadata - fail if required fields are missing
                 date = get_field_value("Date")
-                published = get_field_value("Published") 
+                published = get_field_value("Published")
                 authors = get_field_value("Author(s)")
-                
+
                 if not date:
                     print("Failed to extract date - this is required")
                     return None
@@ -376,7 +420,7 @@ def scrape_publication_details(url: HttpUrl) -> Optional[PublicationDetails]:
                 if not authors:
                     print("Failed to extract authors - this is required")
                     return None
-                    
+
                 metadata = PublicationMetadata(
                     date=date,
                     published=published,
@@ -392,36 +436,55 @@ def scrape_publication_details(url: HttpUrl) -> Optional[PublicationDetails]:
                     citation=citation,
                     uri=uri,
                     metadata=metadata,
-                    download_links=download_links
+                    download_links=download_links,
                 )
 
             except Exception as e:
                 error_msg = str(e)
                 print(f"Error during scraping of {url}: {error_msg}")
-                
+
                 # Check for connection-related errors that indicate rate limiting or temporary issues
                 temporary_errors = [
-                    "ERR_CONNECTION_REFUSED", "ERR_CONNECTION_RESET", "ERR_CONNECTION_FAILED",
-                    "ERR_NETWORK_CHANGED", "ERR_TIMED_OUT", "net::", "Connection refused",
-                    "Connection reset", "Timeout", "429", "503", "502", "504"
+                    "ERR_CONNECTION_REFUSED",
+                    "ERR_CONNECTION_RESET",
+                    "ERR_CONNECTION_FAILED",
+                    "ERR_NETWORK_CHANGED",
+                    "ERR_TIMED_OUT",
+                    "net::",
+                    "Connection refused",
+                    "Connection reset",
+                    "Timeout",
+                    "429",
+                    "503",
+                    "502",
+                    "504",
                 ]
-                
+
                 # Check for permanent errors that shouldn't be retried
                 permanent_errors = [
-                    "404", "Not Found", "ERR_NAME_NOT_RESOLVED", "ERR_INVALID_URL"
+                    "404",
+                    "Not Found",
+                    "ERR_NAME_NOT_RESOLVED",
+                    "ERR_INVALID_URL",
                 ]
-                
-                is_temporary_error = any(temp_err in error_msg for temp_err in temporary_errors)
-                is_permanent_error = any(perm_err in error_msg for perm_err in permanent_errors)
-                
+
+                is_temporary_error = any(
+                    temp_err in error_msg for temp_err in temporary_errors
+                )
+                is_permanent_error = any(
+                    perm_err in error_msg for perm_err in permanent_errors
+                )
+
                 if is_permanent_error:
                     print("Detected permanent error - will not retry")
                     return None
                 elif is_temporary_error:
-                    print("Detected temporary error - likely rate limiting or server issues")
-                
+                    print(
+                        "Detected temporary error - likely rate limiting or server issues"
+                    )
+
                 return None
-                
+
         except Exception as e:
             print(f"Browser initialization error: {e}")
             return None

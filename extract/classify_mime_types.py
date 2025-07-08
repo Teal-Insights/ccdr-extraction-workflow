@@ -115,10 +115,12 @@ def transform_worldbank_url(url: HttpUrl) -> HttpUrl:
     return url
 
 
-def get_file_type_from_url(download_link: DownloadLink, max_retries=3) -> DownloadLinkWithFileInfo:
+def get_file_type_from_url(
+    download_link: DownloadLink, max_retries=3
+) -> DownloadLinkWithFileInfo:
     """
     Get file type with retry logic for rate limiting.
-    
+
     Raises:
         Exception: If unable to determine a valid MIME type after all retries.
     """
@@ -139,12 +141,17 @@ def get_file_type_from_url(download_link: DownloadLink, max_retries=3) -> Downlo
 
             # Make a GET request with stream=True to get headers and peek at content
             with requests.get(
-                str(actual_url), stream=True, allow_redirects=True, headers=DEFAULT_HEADERS
+                str(actual_url),
+                stream=True,
+                allow_redirects=True,
+                headers=DEFAULT_HEADERS,
             ) as response:
                 # Check for rate limiting
                 if response.status_code == 429:
                     if attempt == max_retries:
-                        raise Exception(f"Rate limited (429) after {max_retries} attempts for {download_link.url}")
+                        raise Exception(
+                            f"Rate limited (429) after {max_retries} attempts for {download_link.url}"
+                        )
                     wait_time = random.uniform(15, 30)  # Longer wait for rate limiting
                     print(
                         f"Rate limited. Waiting {wait_time:.1f} seconds before retry..."
@@ -155,8 +162,6 @@ def get_file_type_from_url(download_link: DownloadLink, max_retries=3) -> Downlo
                 # Get content type and charset from the FINAL response headers (post-redirect)
                 content_type = response.headers.get("Content-Type", "unknown")
                 parsed_header = parse_content_type(content_type)
-
-
 
                 # If we're still getting JSON content type or HTML, try to peek at actual content
                 if (
@@ -186,11 +191,15 @@ def get_file_type_from_url(download_link: DownloadLink, max_retries=3) -> Downlo
                 # Apply UTF-8 fallback if no charset was determined
                 if not charset:
                     charset = "utf-8"
-                    print(f"Warning: No charset detected for {download_link.url}, defaulting to UTF-8")
+                    print(
+                        f"Warning: No charset detected for {download_link.url}, defaulting to UTF-8"
+                    )
 
                 # Log warning if guessed type doesn't match actual MIME type
                 if guessed_type and guessed_type != mime_type:
-                    print(f"Warning: Guessed type '{guessed_type}' doesn't match detected type '{mime_type}' for {download_link.url}")
+                    print(
+                        f"Warning: Guessed type '{guessed_type}' doesn't match detected type '{mime_type}' for {download_link.url}"
+                    )
 
                 result = FileTypeInfo(
                     mime_type=mime_type,
@@ -200,21 +209,25 @@ def get_file_type_from_url(download_link: DownloadLink, max_retries=3) -> Downlo
                 # If we got HTML when expecting PDF/text, consider it a failure
                 if not is_valid_file_info(result.model_dump()):
                     if attempt == max_retries:
-                        raise Exception(f"Failed to get valid file type for {download_link.url} after {max_retries} attempts - got {mime_type}")
+                        raise Exception(
+                            f"Failed to get valid file type for {download_link.url} after {max_retries} attempts - got {mime_type}"
+                        )
                     print("Got unexpected file type, retrying...")
                     continue
 
                 return DownloadLinkWithFileInfo(
                     url=HttpUrl(actual_url) if STORE_FINAL_URL else download_link.url,
                     text=download_link.text,
-                    file_info=result
+                    file_info=result,
                 )
 
         except Exception as e:
             print(f"Attempt {attempt}/{max_retries} failed: {str(e)}")
             if attempt == max_retries:
-                raise Exception(f"Failed to determine MIME type for {download_link.url} after {max_retries} attempts: {str(e)}")
-    
+                raise Exception(
+                    f"Failed to determine MIME type for {download_link.url} after {max_retries} attempts: {str(e)}"
+                )
+
     # This should never be reached, but satisfies the type checker
     raise Exception(f"Unexpected exit from retry loop for {download_link.url}")
 
@@ -222,8 +235,10 @@ def get_file_type_from_url(download_link: DownloadLink, max_retries=3) -> Downlo
 def main():
     # Create a sample DownloadLink
     download_link = DownloadLink(
-        url=HttpUrl("https://openknowledge.worldbank.org/bitstreams/cf2a2b54-559b-5909-ada8-af36b21bd4da/download"),
-        text="English PDF (18.05 MB)"
+        url=HttpUrl(
+            "https://openknowledge.worldbank.org/bitstreams/cf2a2b54-559b-5909-ada8-af36b21bd4da/download"
+        ),
+        text="English PDF (18.05 MB)",
     )
 
     dl_with_info = get_file_type_from_url(download_link)

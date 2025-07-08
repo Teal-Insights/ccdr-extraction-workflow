@@ -6,7 +6,9 @@ from extract.classify_document_types import PublicationDetailsWithClassification
 from load.schema import Publication, Document, DocumentType
 
 
-def persist_publication(pub_data: PublicationDetailsWithClassification, session: Session) -> Publication:
+def persist_publication(
+    pub_data: PublicationDetailsWithClassification, session: Session
+) -> Publication:
     """
     Creates SQLModel objects for a publication and its documents and adds them
     to the session. Does NOT commit the session.
@@ -34,7 +36,10 @@ def persist_publication(pub_data: PublicationDetailsWithClassification, session:
     documents = []
     for dl in pub_data.download_links:
         # Only create Document objects for links marked as to_download=True
-        if dl.classification == DocumentType.MAIN or dl.classification == DocumentType.SUPPLEMENTAL:
+        if (
+            dl.classification == DocumentType.MAIN
+            or dl.classification == DocumentType.SUPPLEMENTAL
+        ):
             # Validate required fields
             doc = Document(
                 # No id or publication_id - these will be auto-generated and set by the relationship
@@ -51,9 +56,7 @@ def persist_publication(pub_data: PublicationDetailsWithClassification, session:
 
     # Check that we have at least one valid document
     if not documents:
-        raise ValueError(
-            f"No valid documents found for publication: {pub_data.title}"
-        )
+        raise ValueError(f"No valid documents found for publication: {pub_data.title}")
 
     # Assign documents to the publication
     publication.documents = documents

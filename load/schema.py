@@ -148,7 +148,9 @@ class Publication(SQLModel, table=True):
         return v
 
     # Relationships
-    documents: Mapped[List["Document"]] = Relationship(back_populates="publication", cascade_delete=True)
+    documents: Mapped[List["Document"]] = Relationship(
+        back_populates="publication", cascade_delete=True
+    )
 
 
 class Document(SQLModel, table=True):
@@ -187,8 +189,12 @@ class Document(SQLModel, table=True):
         return v
 
     # Relationships
-    publication: Mapped[Optional[Publication]] = Relationship(back_populates="documents")
-    nodes: Mapped[List["Node"]] = Relationship(back_populates="document", cascade_delete=True)
+    publication: Mapped[Optional[Publication]] = Relationship(
+        back_populates="documents"
+    )
+    nodes: Mapped[List["Node"]] = Relationship(
+        back_populates="document", cascade_delete=True
+    )
 
 
 class Node(SQLModel, table=True):
@@ -203,7 +209,9 @@ class Node(SQLModel, table=True):
     node_type: NodeType
     tag_name: Optional[TagName] = Field(default=None, index=True)
     section_type: Optional[SectionType] = Field(default=None, index=True)
-    parent_id: Optional[int] = Field(default=None, foreign_key="node.id", index=True, ondelete="CASCADE")
+    parent_id: Optional[int] = Field(
+        default=None, foreign_key="node.id", index=True, ondelete="CASCADE"
+    )
     sequence_in_parent: int
     positional_data: List[Dict[str, Any]] = Field(
         default_factory=list, sa_column=Column(JSONB)
@@ -214,17 +222,21 @@ class Node(SQLModel, table=True):
     parent: Mapped[Optional["Node"]] = Relationship(
         back_populates="children", sa_relationship_kwargs={"remote_side": "Node.id"}
     )
-    children: Mapped[List["Node"]] = Relationship(back_populates="parent", cascade_delete=True)
-    content_data: Mapped[Optional["ContentData"]] = Relationship(back_populates="node", cascade_delete=True)
+    children: Mapped[List["Node"]] = Relationship(
+        back_populates="parent", cascade_delete=True
+    )
+    content_data: Mapped[Optional["ContentData"]] = Relationship(
+        back_populates="node", cascade_delete=True
+    )
     source_relations: Mapped[List["Relation"]] = Relationship(
         back_populates="source_node",
         sa_relationship_kwargs={"foreign_keys": "Relation.source_node_id"},
-        cascade_delete=True
+        cascade_delete=True,
     )
     target_relations: Mapped[List["Relation"]] = Relationship(
         back_populates="target_node",
         sa_relationship_kwargs={"foreign_keys": "Relation.target_node_id"},
-        cascade_delete=True
+        cascade_delete=True,
     )
 
 
@@ -232,7 +244,9 @@ class ContentData(SQLModel, table=True):
     __table_args__ = {"comment": "Contains actual content for content-bearing nodes"}
 
     id: Optional[int] = Field(default=None, primary_key=True, index=True)
-    node_id: int = Field(foreign_key="node.id", index=True, unique=True, ondelete="CASCADE")
+    node_id: int = Field(
+        foreign_key="node.id", index=True, unique=True, ondelete="CASCADE"
+    )
     text_content: Optional[str] = None
     storage_url: Optional[str] = Field(default=None, max_length=500)
     description: Optional[str] = None
@@ -250,7 +264,9 @@ class ContentData(SQLModel, table=True):
 
     # Relationships
     node: Mapped[Node] = Relationship(back_populates="content_data")
-    embeddings: Mapped[List["Embedding"]] = Relationship(back_populates="content_data", cascade_delete=True)
+    embeddings: Mapped[List["Embedding"]] = Relationship(
+        back_populates="content_data", cascade_delete=True
+    )
 
 
 class Relation(SQLModel, table=True):
@@ -286,4 +302,6 @@ class Embedding(SQLModel, table=True):
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     # Relationships
-    content_data: Mapped[Optional[ContentData]] = Relationship(back_populates="embeddings")
+    content_data: Mapped[Optional[ContentData]] = Relationship(
+        back_populates="embeddings"
+    )

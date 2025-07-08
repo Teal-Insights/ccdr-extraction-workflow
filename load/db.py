@@ -21,9 +21,9 @@ engine = create_engine(get_database_url())
 
 def check_schema_sync():
     """Check if local schema is in sync with master."""
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print("CHECKING SCHEMA SYNCHRONIZATION")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
 
     try:
         # Fetch master schema from GitHub

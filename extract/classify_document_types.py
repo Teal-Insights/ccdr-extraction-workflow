@@ -19,15 +19,59 @@ from extract.classify_mime_types import DownloadLinkWithFileInfo
 
 # Filter out common non-language words and short words
 NON_LANGUAGE_WORDS = {
-    "pdf", "download", "file", "document", "report", "mb", "kb", "gb",
-    "summary", "full", "main", "background", "note", "overview",
-    "the", "and", "or", "for", "in", "with", "of", "a", "an", "is", "are",
-    "executive", "technical", "appendix", "annex", "chapter", "section",
+    "pdf",
+    "download",
+    "file",
+    "document",
+    "report",
+    "mb",
+    "kb",
+    "gb",
+    "summary",
+    "full",
+    "main",
+    "background",
+    "note",
+    "overview",
+    "the",
+    "and",
+    "or",
+    "for",
+    "in",
+    "with",
+    "of",
+    "a",
+    "an",
+    "is",
+    "are",
+    "executive",
+    "technical",
+    "appendix",
+    "annex",
+    "chapter",
+    "section",
     # Add common English words that were causing false positives
-    "climate", "change", "economic", "damage", "environmental", "risks",
-    "financial", "private", "sector", "forestry", "agroforestry", 
-    "assessment", "groundwater", "irrigation", "indicative", "total",
-    "development", "financing", "needs", "estimating", "country"
+    "climate",
+    "change",
+    "economic",
+    "damage",
+    "environmental",
+    "risks",
+    "financial",
+    "private",
+    "sector",
+    "forestry",
+    "agroforestry",
+    "assessment",
+    "groundwater",
+    "irrigation",
+    "indicative",
+    "total",
+    "development",
+    "financing",
+    "needs",
+    "estimating",
+    "country",
 }
 
 NON_PDF_INDICATORS = [" text "]
@@ -45,10 +89,12 @@ SUPPLEMENTARY_INDICATORS = [
     "brief",
 ]
 
+
 class DownloadLinkWithClassification(DownloadLinkWithFileInfo):
     classification: DocumentType
     language_detected: Optional[str]
     reasoning: str
+
 
 class PublicationDetailsWithClassification(PublicationDetailsBase):
     download_links: List[DownloadLinkWithClassification]
@@ -57,7 +103,7 @@ class PublicationDetailsWithClassification(PublicationDetailsBase):
 def detect_language_in_text(text: str) -> Optional[str]:
     """
     Detect if text contains explicit non-English language names.
-    
+
     This function looks for actual language names in English using langcodes.find(),
     which is much more precise than fuzzy matching language codes.
 
@@ -66,19 +112,21 @@ def detect_language_in_text(text: str) -> Optional[str]:
     """
     # Extract words, removing punctuation and size info
     words = re.findall(r"\b[a-zA-Z]+\b", text.lower())
-    
-    filtered_words = [word for word in words if word not in NON_LANGUAGE_WORDS and len(word) > 2]
-    
+
+    filtered_words = [
+        word for word in words if word not in NON_LANGUAGE_WORDS and len(word) > 2
+    ]
+
     for word in filtered_words:
         try:
             # Try to find the word as a language name in English
-            lang = langcodes.find(word, language='en')
-            if lang and lang.language != 'en':  # Not English
+            lang = langcodes.find(word, language="en")
+            if lang and lang.language != "en":  # Not English
                 return lang.language
         except LookupError:
             # Word is not a language name, continue checking other words
             continue
-    
+
     return None
 
 
@@ -98,12 +146,14 @@ def classify_download_link(
     text_lower = input.text.lower()
 
     # Detect language and set default to English
-    detected_lang = detect_language_in_text(input.text) or 'en'
+    detected_lang = detect_language_in_text(input.text) or "en"
     is_pdf = not any(indicator in text_lower for indicator in NON_PDF_INDICATORS)
 
-    if detected_lang != 'en' or not is_pdf:
+    if detected_lang != "en" or not is_pdf:
         if verbose:
-            print(f"Skipping link: {input.text} (language: {detected_lang}, PDF: {is_pdf})")
+            print(
+                f"Skipping link: {input.text} (language: {detected_lang}, PDF: {is_pdf})"
+            )
         return None
 
     # Check for main report indicators
@@ -134,29 +184,33 @@ def classify_download_link(
             url=input.url,
             text=input.text,
             file_info=input.file_info,
-            classification=DocumentType.MAIN if position == 0 else DocumentType.SUPPLEMENTAL,
+            classification=DocumentType.MAIN
+            if position == 0
+            else DocumentType.SUPPLEMENTAL,
             language_detected=detected_lang,
             reasoning=(
                 "First English PDF (assumed main report)"
-                if position == 0 else
-                f"English PDF in position {position + 1} (assumed supplementary)"
-            )
+                if position == 0
+                else f"English PDF in position {position + 1} (assumed supplementary)"
+            ),
         )
 
     # Default case - no explicit language or PDF specified
     else:
         result = DownloadLinkWithClassification(
-        url=input.url,
-        text=input.text,
-        file_info=input.file_info,
-        classification=DocumentType.MAIN if position == 0 else DocumentType.SUPPLEMENTAL,
-        language_detected=detected_lang,
-        reasoning=(
-            "First document with no language specified (assumed main English report)"
-            if position == 0 else
-            f"Document in position {position + 1} with no language specified (assumed supplementary)"
+            url=input.url,
+            text=input.text,
+            file_info=input.file_info,
+            classification=DocumentType.MAIN
+            if position == 0
+            else DocumentType.SUPPLEMENTAL,
+            language_detected=detected_lang,
+            reasoning=(
+                "First document with no language specified (assumed main English report)"
+                if position == 0
+                else f"Document in position {position + 1} with no language specified (assumed supplementary)"
+            ),
         )
-    )
 
     if verbose:
         print(f"{input.text} -> {result.classification}")
@@ -199,7 +253,7 @@ def classify_download_links(
 if __name__ == "__main__":
     from extract.classify_mime_types import FileTypeInfo
     from pydantic import HttpUrl
-    
+
     # Test the classification with some sample data including problematic cases
     test_links = [
         "English PDF (3.71 MB)",
@@ -217,17 +271,17 @@ if __name__ == "__main__":
         "Spanish Document Overview (1.8 MB)",
         "Chinese Analysis Report (3.2 MB)",
         "Agriculture in Punjab (3.71 MB)",
-        "Full Report (1.3 MB)"
+        "Full Report (1.3 MB)",
     ]
 
-    results = classify_download_links([
-        DownloadLinkWithFileInfo(
-            url=HttpUrl(f"https://localhost:8000/test{i+1}.pdf"),
-            text=link,
-            file_info=FileTypeInfo(
-                mime_type="application/pdf",
-                charset="utf-8"
+    results = classify_download_links(
+        [
+            DownloadLinkWithFileInfo(
+                url=HttpUrl(f"https://localhost:8000/test{i + 1}.pdf"),
+                text=link,
+                file_info=FileTypeInfo(mime_type="application/pdf", charset="utf-8"),
             )
-        )
-        for i, link in enumerate(test_links)
-    ], verbose=True)
+            for i, link in enumerate(test_links)
+        ],
+        verbose=True,
+    )

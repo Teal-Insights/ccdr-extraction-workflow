@@ -22,6 +22,7 @@ dependencies = [
 dev = [
     "boto3-stubs>=1.39.0",
     "mypy>=1.16.1",
+    "ruff>=0.12.2",
     "types-requests>=2.32.0.20250328",
     "types-tqdm>=4.67.0.20250417",
 ]

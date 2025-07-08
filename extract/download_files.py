@@ -209,7 +209,6 @@ def main():
 
         # Download files marked for download
         for link in pub["downloadLinks"]:
-
             if link.get("to_download", False):
                 try:
                     print(f"\nDownloading {link['text']} for publication {pub_id}")
