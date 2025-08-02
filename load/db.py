@@ -2,7 +2,10 @@ import os
 from sqlmodel import create_engine
 import requests
 import difflib
+from dotenv import load_dotenv
 from pathlib import Path
+
+load_dotenv(os.getenv("ENVIRONMENT", ".env"))
 
 
 # Database connection setup

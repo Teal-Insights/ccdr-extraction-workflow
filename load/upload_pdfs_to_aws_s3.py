@@ -33,7 +33,7 @@ import logging
 from load.schema import Document
 
 # Load environment variables
-load_dotenv()
+load_dotenv(os.getenv("ENVIRONMENT", ".env"))
 
 # Set up logging
 logging.basicConfig(

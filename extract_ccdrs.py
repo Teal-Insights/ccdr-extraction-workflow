@@ -49,7 +49,7 @@ from load.upload_pdfs_to_aws_s3 import (
     cleanup_local_files,
 )
 
-load_dotenv(override=True)
+load_dotenv(os.getenv("ENVIRONMENT", ".env"))
 
 
 def identify_new_publications(

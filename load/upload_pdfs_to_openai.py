@@ -24,7 +24,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Load environment variables from .env file
-load_dotenv(override=True)
+load_dotenv(os.getenv("ENVIRONMENT", ".env"))
 
 
 # Helper function to get or create a vector store

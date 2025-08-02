@@ -9,7 +9,7 @@ from sqlalchemy.dialects.postgresql import ARRAY, FLOAT, JSONB
 from sqlalchemy.orm import Mapped
 
 # Load environment variables
-load_dotenv(os.getenv("ENVIRONMENT", ".env"), override=True)
+load_dotenv(os.getenv("ENVIRONMENT", ".env"))
 
 
 # Enums for document and node types
