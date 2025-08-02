@@ -74,7 +74,7 @@ NON_LANGUAGE_WORDS = {
     "country",
 }
 
-NON_PDF_INDICATORS = [" text "]
+NON_PDF_INDICATORS = [" text"]
 
 # Check for supplementary document indicators
 SUPPLEMENTARY_INDICATORS = [
