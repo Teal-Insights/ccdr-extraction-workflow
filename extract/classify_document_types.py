@@ -242,7 +242,7 @@ def classify_download_links(
 
     filtered_links = [link for link in links if link]
 
-    print(f"Classification summary:")
+    print("Classification summary:")
     print(f"  Total links: {len(links)}")
     print(f"  Downloadable: {len(filtered_links)}")
     print(f"  Skipped: {len(links) - len(filtered_links)}")

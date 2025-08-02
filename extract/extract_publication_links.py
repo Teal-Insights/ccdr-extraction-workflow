@@ -257,7 +257,7 @@ def extract_publication_links_from_page(page, url):
 
     # Check if we got rate limited
     if response.status == 429:
-        print(f"Rate limited (429 status).")
+        print("Rate limited (429 status).")
         return None
 
     # Wait for the page to load
@@ -320,7 +320,7 @@ def extract_publication_links_from_page(page, url):
     print(f"Page title: {title}")
 
     if "429" in title or "too many requests" in title.lower():
-        print(f"Detected rate limiting in title.")
+        print("Detected rate limiting in title.")
         return None
 
     # Check if we've reached the end of results
@@ -442,11 +442,11 @@ if __name__ == "__main__":
 
     all_links = get_all_publication_links(base_url, json_path)
 
-    print(f"\nFinal summary:")
+    print("\nFinal summary:")
     print(f"Total publication links: {len(all_links)}")
     print(f"Saved to: {json_path}")
 
-    print(f"\nFirst 5 publications:")
+    print("\nFirst 5 publications:")
     for i, link in enumerate(all_links[:5]):  # Show first 5 as example
         print(f"{i + 1}. {link.title}")
         print(f"   URL: {link.url}")
