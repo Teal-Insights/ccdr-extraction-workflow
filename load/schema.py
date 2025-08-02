@@ -1,15 +1,10 @@
-import os
 from datetime import date, datetime, UTC
 from typing import List, Optional, Dict, Any
 from enum import Enum
-from dotenv import load_dotenv
 from sqlmodel import Field, Relationship, SQLModel, Column
 from pydantic import HttpUrl, field_validator
 from sqlalchemy.dialects.postgresql import ARRAY, FLOAT, JSONB
 from sqlalchemy.orm import Mapped
-
-# Load environment variables
-load_dotenv(os.getenv("ENVIRONMENT", ".env"))
 
 
 # Enums for document and node types
@@ -24,6 +19,7 @@ class NodeType(str, Enum):
     ELEMENT_NODE = "ELEMENT_NODE"
 
 
+# TODO: Create helper methods to return tags of a given type, e.g., top-level, structural, headings, etc.
 class TagName(str, Enum):
     # Only structural elements
     HEADER = "header"
