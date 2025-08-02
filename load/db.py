@@ -74,7 +74,7 @@ def check_schema_sync():
             print("-" * 40)
             print("\nTo sync your schema, run:")
             print(
-                "curl -s https://raw.githubusercontent.com/Teal-Insights/ccdr-explorer-api/refs/heads/main/db/schema.py > extract/schema.py"
+                "curl -s https://raw.githubusercontent.com/Teal-Insights/ccdr-explorer-api/refs/heads/main/db/schema.py > load/schema.py"
             )
             return False
 
@@ -86,3 +86,7 @@ def check_schema_sync():
     except Exception as e:
         print(f"❌ Schema sync check failed: {str(e)}")
         return False
+
+
+if __name__ == "__main__":
+    check_schema_sync()
