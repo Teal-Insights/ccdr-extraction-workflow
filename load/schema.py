@@ -101,6 +101,14 @@ class RelationType(str, Enum):
     CROSS_REFERENCES = "CROSS_REFERENCES"
 
 
+class BoundingBox(SQLModel):
+    """Model for bounding box coordinates with serialization support."""
+    x1: float
+    y1: float
+    x2: float
+    y2: float
+
+
 # Pydantic model for positional data
 class PositionalData(SQLModel, table=False):
     """Represents the position of *one* of the bounding boxes
@@ -113,13 +121,13 @@ class PositionalData(SQLModel, table=False):
 
     page_pdf: int
     page_logical: Optional[int] = None
-    bbox: dict[str, int]  # {"x1", "y1", "x2", "y2"}
+    bbox: BoundingBox
 
     def dict(self, *args, **kwargs) -> Dict[str, Any]:
         return {
             "page_pdf": self.page_pdf,
             "page_logical": self.page_logical,
-            "bbox": self.bbox,
+            "bbox": self.bbox.model_dump(),
         }
 
 
