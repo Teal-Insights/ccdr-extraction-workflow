@@ -120,7 +120,7 @@ class PositionalData(SQLModel, table=False):
     """
 
     page_pdf: int
-    page_logical: Optional[int] = None
+    page_logical: Optional[str] = None  # str to support roman, alpha, etc.
     bbox: BoundingBox
 
     def dict(self, *args, **kwargs) -> Dict[str, Any]:
