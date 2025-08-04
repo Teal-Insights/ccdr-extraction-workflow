@@ -123,6 +123,14 @@ class PositionalData(SQLModel, table=False):
     page_logical: Optional[str] = None  # str to support roman, alpha, etc.
     bbox: BoundingBox
 
+    @field_validator('page_logical', mode='before')
+    @classmethod
+    def convert_page_logical_to_string(cls, v):
+        """Convert integer page_logical values to strings for backward compatibility."""
+        if v is not None and not isinstance(v, str):
+            return str(v)
+        return v
+
     def dict(self, *args, **kwargs) -> Dict[str, Any]:
         return {
             "page_pdf": self.page_pdf,
