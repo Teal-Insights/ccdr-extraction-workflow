@@ -284,6 +284,12 @@ class ContentData(SQLModel, table=True):
         back_populates="content_data", cascade_delete=True
     )
 
+    @property
+    def document_id(self) -> Optional[int]:
+        if self.node is None:
+            return None
+        return self.node.document_id
+
 
 class Relation(SQLModel, table=True):
     __table_args__ = {
@@ -321,3 +327,12 @@ class Embedding(SQLModel, table=True):
     content_data: Mapped[Optional[ContentData]] = Relationship(
         back_populates="embeddings"
     )
+
+    @property
+    def document_id(self) -> Optional[int]:
+        if self.content_data is None:
+            return None
+        node = self.content_data.node
+        if node is None:
+            return None
+        return node.document_id
