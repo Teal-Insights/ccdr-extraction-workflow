@@ -48,8 +48,9 @@ from load.upload_pdfs_to_aws_s3 import (
     upload_file_to_s3,
     cleanup_local_files,
 )
+from load.classify_geography import main as run_classify_geographies
 
-load_dotenv(os.getenv("ENVIRONMENT", ".env"))
+load_dotenv()
 
 
 def identify_new_publications(
@@ -105,7 +106,7 @@ def run_stage_1_metadata_ingestion() -> None:
             )
             if not pub_details or not pub_details.download_links:
                 print(
-                    f"  -> Failed to scrape details or no download links found. Skipping."
+                    "  -> Failed to scrape details or no download links found. Skipping."
                 )
                 continue
 
@@ -142,7 +143,7 @@ def run_stage_1_metadata_ingestion() -> None:
 
             # d. Validate that there's at least one download link to process
             if not pub_details_with_classification.download_links:
-                print(f"  -> No downloadable documents found. Skipping publication.")
+                print("  -> No downloadable documents found. Skipping publication.")
                 continue
 
             # 4. Persist to Database in a transaction
@@ -184,7 +185,7 @@ def run_stage_2_file_processing() -> None:
 
     with Session(engine) as session:
         # 1. Query for Unprocessed Documents
-        statement = select(Document).where(Document.storage_url == None)
+        statement = select(Document).where(Document.storage_url is None)
         unprocessed_docs = session.exec(statement).all()
 
         if not unprocessed_docs:
@@ -272,6 +273,9 @@ if __name__ == "__main__":
         "--stage2", action="store_true", help="Run only Stage 2: File Processing."
     )
     parser.add_argument(
+        "--classify", action="store_true", help="Classify geographies for ingested publications."
+    )
+    parser.add_argument(
         "--openai", action="store_true", help="Run OpenAI upload after other stages."
     )
     parser.add_argument(
@@ -289,12 +293,16 @@ if __name__ == "__main__":
     # Determine which stages to run
     run_s1 = args.stage1 or (not args.stage1 and not args.stage2)
     run_s2 = args.stage2 or (not args.stage1 and not args.stage2)
+    run_classify = args.classify or (not args.stage1 and not args.stage2 and not args.classify)
 
     if run_s1:
         run_stage_1_metadata_ingestion()
 
     if run_s2:
         run_stage_2_file_processing()
+
+    if run_classify:
+        run_classify_geographies()
 
     if args.openai:
         # OpenAI upload runs after the primary stages are complete

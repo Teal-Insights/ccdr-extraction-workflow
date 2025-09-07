@@ -5,7 +5,7 @@ import difflib
 from dotenv import load_dotenv
 from pathlib import Path
 
-load_dotenv(os.getenv("ENVIRONMENT", ".env"))
+load_dotenv()
 
 
 # Database connection setup
